@@ -357,6 +357,26 @@ class School:
 
         return times, conflicts
 
+    def append_pos(self, sender: Lesson, from_day: int = -1):
+        times = [[sender.is_available(day, les_pos) for les_pos in range(self.amount_lessons)
+                  ] for day in range(self.amount_days)]
+        conflicts = [[[] for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]
+        for day in range(self.amount_days):
+            for les_pos in range(self.amount_lessons):
+                for receiver in self.timetable[day][les_pos]:
+                    if receiver == sender and day != from_day:
+                        for pos in range(self.amount_lessons):
+                            times[day][pos] = False
+                            conflicts[day][pos].append({"lesson": receiver, "day": day, "position": les_pos})
+                        break
+
+                    if receiver.teacher == sender.teacher:
+                        if receiver.student_class != sender.student_class:
+                            times[day][les_pos] = False
+                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
+                            continue
+        return times, conflicts
+
     def toJSON(self):
         school_tojson = {"name": self.name,
                          "amount_days": self.amount_days,

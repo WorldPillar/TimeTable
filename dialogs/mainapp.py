@@ -13,6 +13,7 @@ from schooldata.extendedRS import ExtendedRecursiveSwapping
 from schooldata.school import School
 from schooldata.validateData import Validator
 from windows import mainWindow, schoolWindow
+from dialogs.widgets.listWidget import MyListWidget
 
 desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
 
@@ -39,6 +40,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.set_save_actions()
         self.set_export_actions()
         self.create_table()
+
+        self.new_table = MyListWidget(self, self.tableWidget_timetable)
+        self.verticalLayout_2.addWidget(self.new_table)
+        self.tableWidget_timetable.unallocated_list = self.new_table
+        self.new_table.mainapp = self
 
     def create_table(self, days_amount: int = 5, lessons_amount: int = 8):
         """
@@ -192,8 +198,16 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
         self.school.drop_current_time()
         builder = ExtendedRecursiveSwapping(self.school)
-        self.school = builder.start()
+        self.school, unallocated_lessons = builder.start()
         self.tableWidget_timetable.fill_table(self.school)
+
+        self.new_table.add_unallocated_lessons(unallocated_lessons)
+        if len(unallocated_lessons) > 0:
+            msg = QtWidgets.QMessageBox()
+            msg.setWindowTitle('Неудача')
+            msg.setText(f'Не распределено {len(unallocated_lessons)} уроков.\n'
+                        f'Они были помещены в список внизу окна.')
+            msg.exec()
         return
 
     def set_buttons_available(self):

@@ -1,5 +1,6 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtWidgets import QAbstractItemView
 
 import utils
 from schooldata.data import SchoolData
@@ -7,9 +8,10 @@ from schooldata.school import School, Lesson, StudentClass
 
 
 class ConflictMenuEvent(QtGui.QContextMenuEvent):
-    def __init__(self, point: QPoint, position: (int, int, int, int)):
+    def __init__(self, point: QPoint, position: (int, int), is_table_sender: bool):
         super(ConflictMenuEvent, self).__init__(QtGui.QContextMenuEvent.Reason(1), point)
         self.position = position
+        self.is_table_sender = is_table_sender
 
 
 class ConflictAction(QtWidgets.QWidgetAction):
@@ -73,9 +75,12 @@ class MyTableWidget(QtWidgets.QTableWidget):
     def __init__(self, parent):
         super(MyTableWidget, self).__init__(parent)
         self.mainapp = None
+        self.unallocated_list = None
         self.swapping_available = []
         self.conflicts = []
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_AlwaysShowToolTips, True)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.setAcceptDrops(True)
 
     def create_table(self, days_amount: int = 5, lessons_amount: int = 8):
         self.setRowCount(0)
@@ -134,15 +139,22 @@ class MyTableWidget(QtWidgets.QTableWidget):
         school = self.mainapp.school
         from_day, from_les_pos = utils.column_to_days_lessons(from_index.column(), school.amount_lessons)
 
-        self.swapping_available, self.conflicts = school.swapping_pos(from_item.lesson, from_day, from_les_pos)
+        # self.swapping_available, self.conflicts = school.swapping_pos(from_item.lesson, from_day, from_les_pos)
+        self.swapping_available, self.conflicts = school.append_pos(from_item.lesson, from_day)
         self.mark_conflicts(school.amount_lessons)
 
         super(MyTableWidget, self).startDrag(supportedActions)
 
     def dragLeaveEvent(self, e: QtGui.QDragLeaveEvent) -> None:
         self.reset_conflicts()
+        super(MyTableWidget, self).dragLeaveEvent(e)
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        sender = event.source()
+        if sender != self:
+            self.dropFromOut(event)
+            return
+
         school = self.mainapp.school
         from_index = self.selectedIndexes()[0]
         from_item = self.itemFromIndex(from_index)
@@ -151,7 +163,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
         to_index = self.indexAt(point)
         to_item = self.item(to_index.row(), to_index.column())
 
-        if from_index.row() != to_index.row() or from_item is None:
+        if from_index.row() != to_index.row() or from_item is None or from_index == to_index:
             event.ignore()
             self.reset_conflicts()
             return
@@ -161,20 +173,103 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         is_swapping_available = self.swapping_available[to_day][to_les_pos]
         if not is_swapping_available:
-            position = (from_day, from_les_pos, to_day, to_les_pos)
-            is_swapping_available = self.contextMenuEvent(ConflictMenuEvent(self.mapToGlobal(point), position))
+            position = (to_day, to_les_pos)
+            action = self.contextMenuEvent(ConflictMenuEvent(self.mapToGlobal(point), position, True))
+            if action == 1:
+                self._throw_conflicts(school, to_day, to_les_pos)
+                is_swapping_available = True
+            elif action == 2:
+                is_swapping_available = True
 
         if is_swapping_available:
-            super(MyTableWidget, self).dropEvent(event)
+            from_item = self.takeItem(from_index.row(), from_index.column())
+            if to_item is not None:
+                to_item = self.takeItem(to_index.row(), to_index.column())
+                to_lesson = to_item.lesson
+
             self.setItem(to_index.row(), to_index.column(), from_item)
             self._replace(school, from_item.lesson, from_day, from_les_pos, to_day, to_les_pos)
 
             if to_item is not None:
-                self.setItem(from_index.row(), from_index.column(), TimeTableItem(to_item.lesson))
-                self._replace(school, to_item.lesson, to_day, to_les_pos, from_day, from_les_pos)
-            event.accept()
+                self._throw_lesson(school, to_lesson, to_day, to_les_pos)
 
         self.reset_conflicts()
+        return
+
+    def dropFromOut(self, event: QtGui.QDropEvent):
+        school = self.mainapp.school
+        append_index = self.unallocated_list.selectedIndexes()[0]
+        append_item = self.unallocated_list.itemFromIndex(append_index)
+
+        point = QPoint(int(event.position().x()), int(event.position().y()))
+        throw_index = self.indexAt(point)
+        throw_item = self.item(throw_index.row(), throw_index.column())
+
+        if append_item.lesson.student_class.id != throw_index.row() or append_item is None:
+            event.ignore()
+            self.reset_conflicts()
+            return
+
+        day, les_pos = utils.column_to_days_lessons(throw_index.column(), school.amount_lessons)
+
+        is_swapping_available = self.swapping_available[day][les_pos]
+        if not is_swapping_available:
+            position = (day, les_pos)
+            action = self.contextMenuEvent(ConflictMenuEvent(self.mapToGlobal(point), position, False))
+            if action == 1:
+                self._throw_conflicts(school, day, les_pos)
+                is_swapping_available = True
+            elif action == 2:
+                is_swapping_available = True
+
+        if is_swapping_available:
+            append_item = self.unallocated_list.takeItem(append_index.row())
+            append_lesson = append_item.lesson
+            if throw_item is not None:
+                throw_item = self.takeItem(throw_index.row(), throw_index.column())
+                throw_lesson = throw_item.lesson
+
+            self.setItem(throw_index.row(), throw_index.column(), TimeTableItem(append_lesson))
+            self._append_lesson(school, append_lesson, day, les_pos)
+
+            if throw_item is not None:
+                self._throw_lesson(school, throw_lesson, day, les_pos)
+
+        self.unallocated_list.set_color(False)
+        self.reset_conflicts()
+        pass
+
+    @staticmethod
+    def _append_lesson(school: School, append_lesson: Lesson, day: int, les_pos: int):
+        school.timetable[day][les_pos].append(append_lesson)
+        append_lesson.set_unavailable(day, les_pos)
+        return
+
+    def _throw_lesson(self, school: School, throw_lesson: Lesson, day: int, les_pos: int):
+        self.unallocated_list.add_unallocated_lesson(throw_lesson)
+
+        for lesson in range(len(school.timetable[day][les_pos])):
+            if school.timetable[day][les_pos][lesson] == throw_lesson:
+                school.timetable[day][les_pos].pop(lesson)
+                throw_lesson.set_available(day, les_pos)
+                return
+        return
+
+    def _throw_conflicts(self, school: School, day: int, les_pos: int):
+        for conflict in self.conflicts[day][les_pos]:
+            conflict_day = conflict['day']
+            conflict_position = conflict['position']
+            conflict_lesson = conflict['lesson']
+            for lesson in range(len(school.timetable[conflict_day][conflict_position])):
+                if school.timetable[conflict_day][conflict_position][lesson] == conflict_lesson:
+                    school.timetable[conflict_day][conflict_position].pop(lesson)
+
+                    column = conflict_day * school.amount_lessons + conflict_position
+                    self.takeItem(conflict_lesson.student_class.id, column)
+
+                    conflict_lesson.set_available(day, les_pos)
+                    self.unallocated_list.add_unallocated_lesson(conflict['lesson'])
+                    break
         return
 
     @staticmethod
@@ -188,22 +283,31 @@ class MyTableWidget(QtWidgets.QTableWidget):
         from_lesson.set_unavailable(to_day, to_les_pos)
         return
 
-    def contextMenuEvent(self, a0: ConflictMenuEvent) -> bool:
-        from_index = self.selectedIndexes()[0]
-        from_item = self.itemFromIndex(from_index)
-        if from_item is None:
-            return
+    def contextMenuEvent(self, a0: ConflictMenuEvent) -> int:
+        if a0.is_table_sender:
+            from_index = self.selectedIndexes()[0]
+            from_item = self.itemFromIndex(from_index)
+            if from_item is None:
+                return
+        else:
+            from_index = self.unallocated_list.selectedIndexes()[0]
+            from_item = self.unallocated_list.itemFromIndex(from_index)
+            if from_item is None:
+                return
 
         menu = QtWidgets.QMenu()
         menu.setWindowTitle('Несоответствия')
 
-        conflict_action = ConflictAction(menu, self.conflicts, a0.position[2], a0.position[3])
+        conflict_action = ConflictAction(menu, self.conflicts, a0.position[0], a0.position[1])
 
         menu.addAction(conflict_action)
         cancel_action = menu.addAction('Отменить')
+        throw_action = menu.addAction('Выбросить несоответствия и поместить')
         place_action = menu.addAction('Игнорировать и поместить')
         action = menu.exec(a0.pos())
         if action == cancel_action:
-            return False
+            return 0
+        elif action == throw_action:
+            return 1
         elif action == place_action:
-            return True
+            return 2

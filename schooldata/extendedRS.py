@@ -14,7 +14,9 @@ class ExtendedRecursiveSwapping:
     def sort(self):
         self.school.lessons.sort(key=lambda x: x.amount, reverse=True)
 
-    def start(self):
+    def start(self) -> (School, list[Lesson]):
+        unallocated_lessons: list[Lesson] = []
+
         self.sort()
 
         for lesson in range(len(self.school.lessons)):
@@ -34,6 +36,7 @@ class ExtendedRecursiveSwapping:
                     if is_swapped:
                         self.school = school
                     else:
+                        unallocated_lessons.append(self.school.lessons[lesson])
                         print('Не смогло распределить')
         count = 0
         for day in self.school.timetable:
@@ -45,7 +48,7 @@ class ExtendedRecursiveSwapping:
         print(f"Всего уроков: {lessons_count}")
         print(f"Не распределено уроков: {lessons_count - count}")
         self.school.lessons.sort(key=lambda x: x.id, reverse=False)
-        return self.school
+        return self.school, unallocated_lessons
 
     @staticmethod
     def try_insert_lesson(school: School, lesson: Lesson, day: int, lesson_pos: int) -> bool:

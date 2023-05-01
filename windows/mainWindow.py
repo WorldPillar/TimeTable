@@ -180,7 +180,6 @@ class Ui_MainWindow(object):
         self.tableWidget_timetable.setAutoScroll(True)
         self.tableWidget_timetable.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tableWidget_timetable.setDragEnabled(True)
-        self.tableWidget_timetable.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
         self.tableWidget_timetable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.tableWidget_timetable.setObjectName("tableWidget_timetable")
         self.tableWidget_timetable.setColumnCount(0)
