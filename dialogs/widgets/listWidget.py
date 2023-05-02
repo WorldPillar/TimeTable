@@ -1,4 +1,5 @@
 from PyQt6 import QtWidgets, QtGui, QtCore
+from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QAbstractItemView
 
 import utils
@@ -13,6 +14,12 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
         self.conflicts = []
         self.setText(lesson.subject.abbreviation)
         self.setToolTip(self.set_tooltip_info())
+        self.set_controls()
+
+    def set_controls(self):
+        self.setSizeHint(QSize(45, 28))
+        self.setBackground(QtGui.QColor(255, 255, 255))
+        self.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def set_tooltip_info(self):
         tooltip = f'{str(self.lesson.subject.abbreviation or "")} - {self.lesson.subject.name}\n' \
@@ -33,7 +40,6 @@ class MyListWidget(QtWidgets.QListWidget):
         self.set_drag_and_drop()
 
         self.timetable = timetable
-
         self.last_selected_row = None
 
     def set_drag_and_drop(self):
@@ -44,7 +50,10 @@ class MyListWidget(QtWidgets.QListWidget):
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.setDragDropOverwriteMode(False)
         self.setFlow(QtWidgets.QListWidget.Flow.LeftToRight)
-        self.setFixedHeight(31)
+        self.setWrapping(True)
+        self.setFixedHeight(45)
+        self.setSpacing(5)
+        self.setStyleSheet("""QListWidget{background: rgb(225, 225, 225);}""")
         return
 
     def add_unallocated_lessons(self, lessons: list[Lesson]):
