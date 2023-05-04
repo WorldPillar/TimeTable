@@ -223,7 +223,8 @@ class School:
         self.subjects: list[Subject] = []
         self.student_classes: list[StudentClass] = []
         self.lessons: list[Lesson] = []
-        self.timetable: list[list[list[Lesson]]] = []
+        self.timetable: list[list[list[Lesson]]] = [[[] for _ in range(self.amount_lessons)
+                                                     ] for _ in range(self.amount_days)]
         WorkTime.set_worktime(amount_days, amount_lessons)
         self.reset_ids()
 

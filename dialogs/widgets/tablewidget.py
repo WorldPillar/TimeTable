@@ -110,7 +110,8 @@ class MyTableWidget(QtWidgets.QTableWidget):
             self.setRowHeight(i, 28)
         for j in range(self.columnCount()):
             day, les_pos = utils.column_to_days_lessons(j, school.amount_lessons)
-            for lesson in school.timetable[day][les_pos]:
+            lessons_in_slot = school.timetable[day][les_pos]
+            for lesson in lessons_in_slot:
                 self.setItem(lesson.student_class.id, j, TimeTableItem(lesson))
 
     def set_color(self, on: bool):
