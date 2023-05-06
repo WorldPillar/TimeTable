@@ -72,6 +72,9 @@ class JSONProcessor:
         timetable = import_data['timetable']
         school.timetable = [[[school.lessons[lesson['lesson']] for lesson in les_pos] for les_pos in day
                              ] for day in timetable]
+
+        unallocated = import_data['unallocated']
+        school.unallocated = [school.lessons[lesson['lesson']] for lesson in unallocated]
         return school
 
     @staticmethod

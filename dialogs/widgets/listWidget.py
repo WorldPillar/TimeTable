@@ -36,8 +36,10 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
 class MyListWidget(QtWidgets.QListWidget):
     def __init__(self, parent, timetable: MyTableWidget):
         super(MyListWidget, self).__init__(parent)
-        self.mainapp = None
+        self.mainapp = parent
         self.set_drag_and_drop()
+
+        self.setToolTip('Список нераспределенных уроков')
 
         self.timetable = timetable
         self.last_selected_row = None
@@ -51,7 +53,7 @@ class MyListWidget(QtWidgets.QListWidget):
         self.setDragDropOverwriteMode(False)
         self.setFlow(QtWidgets.QListWidget.Flow.LeftToRight)
         self.setWrapping(True)
-        self.setFixedHeight(45)
+        self.setFixedHeight(90)
         self.setSpacing(5)
         self.setStyleSheet("""QListWidget{background: rgb(225, 225, 225);}""")
         return
@@ -63,6 +65,7 @@ class MyListWidget(QtWidgets.QListWidget):
 
     def add_unallocated_lesson(self, lesson: Lesson):
         item = ListWidgetItem(lesson)
+        self.mainapp.school.unallocated.append(lesson)
         self.addItem(item)
         return
 
@@ -101,6 +104,14 @@ class MyListWidget(QtWidgets.QListWidget):
                 throw_lesson.set_available(day, les_pos)
                 return
         return
+
+    def takeItem(self, row: int) -> QtWidgets.QListWidgetItem:
+        pop_item = self.item(row)
+        pop_lesson = pop_item.lesson
+        for lesson in range(len(self.mainapp.school.unallocated)):
+            if self.mainapp.school.unallocated[lesson] == pop_lesson:
+                self.mainapp.school.unallocated.pop(lesson)
+        return super(MyListWidget, self).takeItem(row)
 
     def set_color(self, on: bool):
         item = self.timetable.verticalHeaderItem(self.last_selected_row)

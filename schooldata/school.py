@@ -225,6 +225,7 @@ class School:
         self.lessons: list[Lesson] = []
         self.timetable: list[list[list[Lesson]]] = [[[] for _ in range(self.amount_lessons)
                                                      ] for _ in range(self.amount_days)]
+        self.unallocated: list[Lesson] = []
         WorkTime.set_worktime(amount_days, amount_lessons)
         self.reset_ids()
 
@@ -392,6 +393,9 @@ class School:
                                      {"lesson": lesson.id} for lesson in les_pos
                                  ] for les_pos in day
                              ] for day in self.timetable
+                         ],
+                         "unallocated": [
+                             {"lesson": lesson.id} for lesson in self.unallocated
                          ]
                          }
         return school_tojson

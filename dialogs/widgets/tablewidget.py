@@ -72,9 +72,9 @@ class TimeTableItem(QtWidgets.QTableWidgetItem):
 
 
 class MyTableWidget(QtWidgets.QTableWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, mainapp):
         super(MyTableWidget, self).__init__(parent)
-        self.mainapp = None
+        self.mainapp = mainapp
         self.unallocated_list = None
         self.swapping_available = []
         self.conflicts = []
@@ -292,7 +292,9 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         menu.addAction(conflict_action)
         cancel_action = menu.addAction('Отменить')
-        throw_action = menu.addAction('Выбросить несоответствия и поместить')
+        throw_action = None
+        if len(self.conflicts[a0.position[0]][a0.position[1]]) != 0:
+            throw_action = menu.addAction('Выбросить несоответствия и поместить')
         place_action = menu.addAction('Игнорировать и поместить')
         action = menu.exec(a0.pos())
         if action == cancel_action:

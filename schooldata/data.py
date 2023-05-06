@@ -15,7 +15,7 @@ class SchoolData:
     Максимальное количество уроков в одном дне
     """
 
-    max_lesson_in_week = ["1", "2", "3", "4", "5"]
+    max_lesson_in_week = ["1", "2", "3", "4", "5", "6", "7"]
     """
     Максимальное количество одного урока в неделю
     """
@@ -27,6 +27,14 @@ class SchoolData:
     """
     Заголовки таблиц списков школы
     """
+
+    @staticmethod
+    def get_max_lesson_in_week(days: int):
+        """
+        :param days: Количество дней в неделю.
+        :return: Максимальное количество уроков в неделю.
+        """
+        return SchoolData.max_lesson_in_week[:days]
 
     @staticmethod
     def get_days_positions() -> list[str]:

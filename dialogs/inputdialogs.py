@@ -1,5 +1,7 @@
 from PyQt6 import QtGui
-from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView, QDialogButtonBox
 
 from schooldata.data import SchoolData
 from schooldata.school import School, Subject, StudentClass, Teacher, Lesson
@@ -7,9 +9,17 @@ from windows import subjectWindow, classWindow, teacherWindow, lessonWindow, wor
 
 
 class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
-    def __init__(self, subject: Subject = None):
-        super().__init__()
+    def __init__(self, parent, subject: Subject = None):
+        super(SubjectDialog, self).__init__(parent)
         self.setupUi(self)
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
+
         self.name_lineEdit.textChanged.connect(self.abb_constructor)
         if subject is not None:
             self.name_lineEdit.setText(subject.name)
@@ -36,9 +46,17 @@ class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
 
 
 class ClassDialog(QDialog, classWindow.Ui_dialogClass):
-    def __init__(self, student_class: StudentClass = None):
-        super().__init__()
+    def __init__(self, parent, student_class: StudentClass = None):
+        super(ClassDialog, self).__init__(parent)
         self.setupUi(self)
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
+
         self.name_lineEdit.textChanged.connect(self.abb_constructor)
         if student_class is not None:
             self.name_lineEdit.setText(student_class.name)
@@ -65,9 +83,17 @@ class ClassDialog(QDialog, classWindow.Ui_dialogClass):
 
 
 class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
-    def __init__(self, teacher: Teacher = None):
-        super().__init__()
+    def __init__(self, parent, teacher: Teacher = None):
+        super(TeacherDialog, self).__init__(parent)
         self.setupUi(self)
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
+
         self.family_lineEdit.textChanged.connect(self.abb_constructor)
         self.name_lineEdit.textChanged.connect(self.abb_constructor)
         if teacher is not None:
@@ -93,9 +119,17 @@ class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
 
 
 class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
-    def __init__(self, school: School, lesson: Lesson = None):
-        super().__init__()
+    def __init__(self, parent, school: School, lesson: Lesson = None):
+        super(LessonDialog, self).__init__(parent)
         self.setupUi(self)
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
+
         self.school = school
         self.fill_combobox()
         if lesson is not None:
@@ -111,7 +145,7 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         self.class_combobox.setCurrentIndex(-1)
         self.subject_combobox.addItems([x.get_string() for x in self.school.subjects])
         self.subject_combobox.setCurrentIndex(-1)
-        self.count_combobox.addItems(SchoolData.max_lesson_in_week)
+        self.count_combobox.addItems(SchoolData.get_max_lesson_in_week(self.school.amount_days))
         self.count_combobox.setCurrentIndex(-1)
 
     def accept(self) -> None:
@@ -122,8 +156,8 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
 
 
 class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
-    def __init__(self, item):
-        super().__init__()
+    def __init__(self, parent, item):
+        super(WorkTimeDialog, self).__init__(parent)
         self.setupUi(self)
         self.item = item
         self.tableWidget.itemClicked.connect(self.item_clicked)
@@ -133,8 +167,14 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
         self.tableWidget.setColumnCount(len(self.item.worktime[0]))
         self.tableWidget.setRowCount(len(self.item.worktime))
 
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
+
         self.tableWidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.tableWidget.setHorizontalHeaderLabels(SchoolData.max_lesson_in_week)
         self.tableWidget.verticalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         self.tableWidget.setVerticalHeaderLabels(SchoolData.get_days_abb())
 

@@ -1,4 +1,6 @@
-from PyQt6.QtWidgets import QDialog
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox
+from PyQt6.QtCore import Qt
 
 from dialogs.widgets import subjectTab, classTab, teacherTab, lessonTab
 from schooldata.data import SchoolData
@@ -7,10 +9,16 @@ from windows import listsWindow
 
 
 class ListDialog(QDialog, listsWindow.Ui_dialogLists):
-    def __init__(self, school: School):
-        super(ListDialog, self).__init__()
+    def __init__(self, parent, school: School):
+        super(ListDialog, self).__init__(parent)
         self.setupUi(self)
         self.school = school
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Close).setText('Закрыть')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
 
         self.subject_tab = subjectTab.SubjectTab(self.school, SchoolData.headers["Subject"])
         self.class_tab = classTab.ClassTab(self.school, SchoolData.headers["Class"])

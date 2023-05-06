@@ -23,10 +23,9 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         super().__init__()
         self.school = None
         self.setupUi(self)
+        self.setWindowIcon(QIcon('icons/schoolicon.svg'))
         self.file_path = ''
         self.table_file_path = ''
-
-        self.tableWidget_timetable.mainapp = self
 
         self.tbtn_newfile.clicked.connect(self.new_file)
         self.tbtn_open.clicked.connect(self.open_file)
@@ -41,12 +40,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.set_export_actions()
         self.create_table()
 
-        self.new_table = MyListWidget(self, self.tableWidget_timetable)
-        self.verticalLayout_2.addWidget(self.new_table)
-        self.tableWidget_timetable.unallocated_list = self.new_table
-        self.new_table.mainapp = self
+        self.unallocated_list = MyListWidget(self, self.tableWidget_timetable)
+        self.verticalLayout_2.addWidget(self.unallocated_list)
+        self.tableWidget_timetable.unallocated_list = self.unallocated_list
 
-    def create_table(self, days_amount: int = 5, lessons_amount: int = 8):
+    def create_table(self, days_amount: int = 5, lessons_amount: int = 6):
         """
         Вызов функций для создания заголовков таблиц. Вызывать функцию только при обновлении параметров школы.
         :param days_amount: количество учебных дней в неделю.
@@ -58,7 +56,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.tableWidget_timetable.create_table(days_amount, lessons_amount)
         return
 
-    def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 8):
+    def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 6):
         self.tableWidget_days.setRowCount(0)
         self.tableWidget_days.setFixedHeight(15)
         self.tableWidget_days.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -94,7 +92,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         return
 
     def new_file(self):
-        dlg = SchoolDialog()
+        dlg = SchoolDialog(self)
         if dlg.exec():
             name = dlg.name_lineEdit.text()
             lessons = dlg.amount_lessons_combobox.currentIndex()
@@ -110,13 +108,14 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         return
 
     def open_file(self):
-        (file_name, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Открыть", desktop, "*.json")
+        (file_name, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Открыть", desktop, "*.sked")
         if file_name != '':
             try:
                 self.school = JSONProcessor.json_read(file_name)
             finally:
                 self.set_buttons_available()
                 self.create_table(self.school.amount_days, self.school.amount_lessons)
+                self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
                 self.tableWidget_timetable.fill_table(self.school)
         self.file_path = file_name
         return
@@ -136,7 +135,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if self.file_path != '':
             rout = self.file_path
 
-        (file_name, _) = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить как", rout, "*.json")
+        (file_name, _) = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить как", rout, "*.sked")
         if file_name != '':
             try:
                 JSONProcessor.json_save(file_name, self.school)
@@ -174,7 +173,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         return
 
     def input_lists_window(self, value: int):
-        dlg = ListDialog(self.school)
+        dlg = ListDialog(self, self.school)
         dlg.tabWidget.setCurrentIndex(value)
         dlg.exec()
         self.tableWidget_timetable.fill_table(self.school)
@@ -198,14 +197,14 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
         self.school.drop_current_time()
         builder = ExtendedRecursiveSwapping(self.school)
-        self.school, unallocated_lessons = builder.start()
+        self.school = builder.start()
         self.tableWidget_timetable.fill_table(self.school)
 
-        self.new_table.add_unallocated_lessons(unallocated_lessons)
-        if len(unallocated_lessons) > 0:
+        self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
+        if len(self.school.unallocated) > 0:
             msg = QtWidgets.QMessageBox()
             msg.setWindowTitle('Неудача')
-            msg.setText(f'Не распределено {len(unallocated_lessons)} уроков.\n'
+            msg.setText(f'Не распределено {len(self.school.unallocated)} уроков.\n'
                         f'Они были помещены в список внизу окна.')
             msg.exec()
         return
@@ -222,9 +221,10 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
 
 class SchoolDialog(QtWidgets.QDialog, schoolWindow.Ui_dialogSchool):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super(SchoolDialog, self).__init__(parent)
         self.setupUi(self)
+
         self.amount_lessons_combobox.addItems(SchoolData.max_lessons_in_day)
         self.amount_lessons_combobox.setCurrentIndex(7)
         self.amount_lessons_combobox.setFixedWidth(60)
@@ -232,3 +232,10 @@ class SchoolDialog(QtWidgets.QDialog, schoolWindow.Ui_dialogSchool):
         self.amount_days_combobox.addItems(SchoolData.get_days_positions())
         self.amount_days_combobox.setCurrentIndex(4)
         self.amount_days_combobox.setFixedWidth(60)
+
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)

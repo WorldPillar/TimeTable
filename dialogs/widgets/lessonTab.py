@@ -58,12 +58,12 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
         return
 
     def new(self):
-        dlg = LessonDialog(self.school)
+        dlg = LessonDialog(self, self.school)
         if dlg.exec():
             teacher = self.school.teachers[dlg.teacher_combobox.currentIndex()]
             subject = self.school.subjects[dlg.subject_combobox.currentIndex()]
             student_class = self.school.student_classes[dlg.class_combobox.currentIndex()]
-            amount = int(SchoolData.max_lesson_in_week[dlg.count_combobox.currentIndex()])
+            amount = int(SchoolData.get_max_lesson_in_week(self.school.amount_days)[dlg.count_combobox.currentIndex()])
             lesson = Lesson(subject, teacher, student_class, amount)
             self.school.lessons.append(lesson)
             self.insert_row(self.tableWidget, lesson)
@@ -74,12 +74,12 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
     def edit(self):
         position = self.tableWidget.selectedItems()[0].row()
         lesson = self.school.lessons[position]
-        dlg = LessonDialog(self.school, lesson)
+        dlg = LessonDialog(self, self.school, lesson)
         if dlg.exec():
             teacher = self.school.teachers[dlg.teacher_combobox.currentIndex()]
             subject = self.school.subjects[dlg.subject_combobox.currentIndex()]
             student_class = self.school.student_classes[dlg.class_combobox.currentIndex()]
-            amount = int(SchoolData.max_lesson_in_week[dlg.count_combobox.currentIndex()])
+            amount = int(SchoolData.get_max_lesson_in_week(self.school.amount_days)[dlg.count_combobox.currentIndex()])
 
             lesson.update_lesson_data(subject, teacher, student_class, amount)
             self.update_row(self.tableWidget, lesson, position)
