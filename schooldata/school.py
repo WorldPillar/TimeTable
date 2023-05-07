@@ -306,60 +306,45 @@ class School:
             self.lessons[i].id = i
         Lesson.id_obj = itertools.count(len(self.lessons))
 
-        for i in range(len(self.timetable)):
-            for j in range(len(self.timetable[i])):
-                k = 0
-                length = len(self.timetable[i][j])
-                while k != length:
-                    if self.timetable[i][j][k] == popped:
-                        self.timetable[i][j].pop(k)
-                        length -= 1
-                    else:
-                        k += 1
+        # Удаляем все совпадающие уроки из расписания
+        self.timetable = [[[lesson for lesson in les_pos if lesson != popped
+                            ] for les_pos in day] for day in self.timetable]
+        # Удаляем все совпадающие уроки из нераспределенных уроков
+        self.unallocated = [lesson for lesson in self.unallocated if lesson != popped]
         return
 
-    def swapping_pos(self, sender: Lesson, from_day: int, from_lesson: int) -> (list[bool], list[dict]):
-        times = [[sender.is_available(day, les_pos) for les_pos in range(self.amount_lessons)
-                  ] for day in range(self.amount_days)]
-        conflicts = [[[] for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]
-        for day in range(self.amount_days):
-            for les_pos in range(self.amount_lessons):
-                for receiver in self.timetable[day][les_pos]:
-                    if receiver == sender:
-                        if day == from_day:
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
-                        else:
-                            for pos in range(self.amount_lessons):
-                                times[day][pos] = False
-                                conflicts[day][pos].append({"lesson": receiver, "day": day, "position": les_pos})
+    def update_lesson_amount(self, lesson: Lesson, old_amount):
+        amount = lesson.amount - old_amount
+        if amount == 0:
+            return
+        elif amount > 0:
+            for i in range(amount):
+                self.unallocated.append(lesson)
+            self.unallocated.sort(key=lambda x: x.id, reverse=False)
+            return
+        else:
+            position = 0
+            for i in range(len(self.unallocated)):
+                if self.unallocated[position] == lesson:
+                    self.unallocated.pop(position)
+                    amount += 1
+                    if amount == 0:
+                        return
+                else:
+                    position += 1
+
+            for day in self.timetable:
+                for les_pos in day:
+                    for located_lesson in les_pos:
+                        if located_lesson == lesson:
+                            les_pos.remove(located_lesson)
+                            amount += 1
+                            if amount == 0:
+                                return
                             break
+        return
 
-                    if receiver.teacher == sender.teacher:
-                        if receiver.student_class != sender.student_class:
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
-                        if not receiver.is_available_today(from_day) and day != from_day:
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
-                        continue
-
-                    if receiver.student_class == sender.student_class:
-                        if not receiver.is_available_today(from_day) and day != from_day:
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
-                        if not receiver.teacher_current_available(from_day, from_lesson):
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
-
-        return times, conflicts
-
-    def append_pos(self, sender: Lesson, from_day: int = -1):
+    def append_pos(self, sender: Lesson, from_day: int = -1) -> (list[bool], list[list[list[Lesson]]]):
         times = [[sender.is_available(day, les_pos) for les_pos in range(self.amount_lessons)
                   ] for day in range(self.amount_days)]
         conflicts = [[[] for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]

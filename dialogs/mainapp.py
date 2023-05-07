@@ -103,6 +103,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
             self.set_buttons_available()
             self.create_table(days, lessons)
+            self.unallocated_list.clear()
 
         self.file_path = ''
         return
@@ -177,6 +178,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         dlg.tabWidget.setCurrentIndex(value)
         dlg.exec()
         self.tableWidget_timetable.fill_table(self.school)
+        self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
         return
 
     def scheduling(self):

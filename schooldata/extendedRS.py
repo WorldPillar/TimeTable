@@ -10,6 +10,7 @@ class ExtendedRecursiveSwapping:
         self.amount_lessons = self.school.amount_lessons
         self.amount_days = self.school.amount_days
         self.school.timetable = [[[] for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]
+        self.school.unallocated = []
 
     def sort(self):
         self.school.lessons.sort(key=lambda x: x.amount, reverse=True)

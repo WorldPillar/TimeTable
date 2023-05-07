@@ -66,6 +66,8 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             amount = int(SchoolData.get_max_lesson_in_week(self.school.amount_days)[dlg.count_combobox.currentIndex()])
             lesson = Lesson(subject, teacher, student_class, amount)
             self.school.lessons.append(lesson)
+            self.school.update_lesson_amount(lesson, 0)
+
             self.insert_row(self.tableWidget, lesson)
 
         self.tableWidget.clearSelection()
@@ -81,7 +83,10 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             student_class = self.school.student_classes[dlg.class_combobox.currentIndex()]
             amount = int(SchoolData.get_max_lesson_in_week(self.school.amount_days)[dlg.count_combobox.currentIndex()])
 
+            old_amount = lesson.amount
             lesson.update_lesson_data(subject, teacher, student_class, amount)
+            self.school.update_lesson_amount(lesson, old_amount)
+
             self.update_row(self.tableWidget, lesson, position)
         return
 

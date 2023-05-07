@@ -1,17 +1,19 @@
+from typing import List
+
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QAbstractItemView
+from PyQt6.QtWidgets import QAbstractItemView, QListWidgetItem
 
 import utils
-from schooldata.school import Lesson, StudentClass, Subject, Teacher, School
+from schooldata.school import Lesson, School
 from dialogs.widgets.tablewidget import MyTableWidget
 
 
 class ListWidgetItem(QtWidgets.QListWidgetItem):
-    def __init__(self, lesson: Lesson):
+    def __init__(self, lesson: Lesson, amount: int = 1):
         super().__init__(lesson.subject.name)
         self.lesson = lesson
-        self.conflicts = []
+        self.amount = amount
         self.setText(lesson.subject.abbreviation)
         self.setToolTip(self.set_tooltip_info())
         self.set_controls()
@@ -25,12 +27,23 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
         tooltip = f'{str(self.lesson.subject.abbreviation or "")} - {self.lesson.subject.name}\n' \
                   f'{self.lesson.student_class.name}\n' \
                   f'{str(self.lesson.teacher.abbreviation or "")} - ' \
-                  f'{str(self.lesson.teacher.family or "")} {str(self.lesson.teacher.name or "")}'
+                  f'{str(self.lesson.teacher.family or "")} {str(self.lesson.teacher.name or "")}\n' \
+                  f'Количество - {self.amount}'
         return tooltip
 
     def update(self):
         self.setText(self.lesson.subject.abbreviation)
         return
+
+    def add_count(self) -> int:
+        self.amount += 1
+        self.setToolTip(self.set_tooltip_info())
+        return self.amount
+
+    def remove_count(self) -> int:
+        self.amount -= 1
+        self.setToolTip(self.set_tooltip_info())
+        return self.amount
 
 
 class MyListWidget(QtWidgets.QListWidget):
@@ -59,24 +72,46 @@ class MyListWidget(QtWidgets.QListWidget):
         return
 
     def add_unallocated_lessons(self, lessons: list[Lesson]):
+        self.clear()
+        if len(lessons) == 0:
+            return
+        prev_lesson = lessons[0]
+        count = 0
         for lesson in lessons:
-            item = ListWidgetItem(lesson)
-            self.addItem(item)
+            if prev_lesson == lesson:
+                count += 1
+            else:
+                item = ListWidgetItem(prev_lesson, count)
+                self.addItem(item)
+                count = 1
+            prev_lesson = lesson
+
+        item = ListWidgetItem(lesson, count)
+        self.addItem(item)
+        return
 
     def add_unallocated_lesson(self, lesson: Lesson):
+        for pos in range(self.count()):
+            if lesson == self.item(pos).lesson:
+                self.mainapp.school.unallocated.append(lesson)
+                self.item(pos).add_count()
+                return
+
         item = ListWidgetItem(lesson)
         self.mainapp.school.unallocated.append(lesson)
         self.addItem(item)
         return
 
     def startDrag(self, supportedActions: QtCore.Qt.DropAction) -> None:
+        school = self.mainapp.school
+
         selected_item = self.selectedItems()[0]
         self.last_selected_row = selected_item.lesson.student_class.id
         self.set_color(True)
 
         self.timetable.swapping_available, self.timetable.conflicts =\
-            self.mainapp.school.append_pos(selected_item.lesson)
-        self.timetable.mark_conflicts(self.mainapp.school.amount_lessons)
+            school.append_pos(selected_item.lesson)
+        self.timetable.mark_conflicts(school.amount_lessons)
 
         super(MyListWidget, self).startDrag(supportedActions)
         return
@@ -106,12 +141,28 @@ class MyListWidget(QtWidgets.QListWidget):
         return
 
     def takeItem(self, row: int) -> QtWidgets.QListWidgetItem:
+        school = self.mainapp.school
+
         pop_item = self.item(row)
         pop_lesson = pop_item.lesson
-        for lesson in range(len(self.mainapp.school.unallocated)):
-            if self.mainapp.school.unallocated[lesson] == pop_lesson:
-                self.mainapp.school.unallocated.pop(lesson)
-        return super(MyListWidget, self).takeItem(row)
+        for lesson in range(len(school.unallocated)):
+            if school.unallocated[lesson] == pop_lesson:
+                school.unallocated.pop(lesson)
+                break
+        if pop_item.remove_count() == 0:
+            return super(MyListWidget, self).takeItem(row)
+        else:
+            return pop_item
+
+    def get_available_items(self, class_id: int, to_day: int, to_les_pos: int) -> list[QListWidgetItem]:
+        available_items = []
+
+        for pos in range(self.count()):
+            if self.item(pos).lesson.student_class.id != class_id:
+                continue
+            if self.item(pos).lesson.is_available(to_day, to_les_pos):
+                available_items.append(self.item(pos))
+        return available_items
 
     def set_color(self, on: bool):
         item = self.timetable.verticalHeaderItem(self.last_selected_row)
