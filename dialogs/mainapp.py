@@ -163,7 +163,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if file_name != '':
             try:
                 if not ExcelProcessor.export_table(self.school, param, file_name):
-                    errorbox = QtWidgets.QMessageBox()
+                    errorbox = QtWidgets.QMessageBox(self)
                     errorbox.setWindowTitle('Ошибка')
                     errorbox.setText('Закройте excel файл перед сохранением')
                     errorbox.exec()
@@ -191,7 +191,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
             for comment in conflicts:
                 comments = comments + comment + '\n' + '\n'
 
-            msg = QtWidgets.QMessageBox()
+            msg = QtWidgets.QMessageBox(self)
             msg.setWindowTitle('Ошибки')
             msg.setText(comments)
             msg.exec()
@@ -204,7 +204,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
         self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
         if len(self.school.unallocated) > 0:
-            msg = QtWidgets.QMessageBox()
+            msg = QtWidgets.QMessageBox(self)
             msg.setWindowTitle('Неудача')
             msg.setText(f'Не распределено {len(self.school.unallocated)} уроков.\n'
                         f'Они были помещены в список внизу окна.')
