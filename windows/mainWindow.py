@@ -14,7 +14,7 @@ from dialogs.widgets.tablewidget import MyTableWidget
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1226, 763)
+        MainWindow.resize(1226, 810)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -170,7 +170,7 @@ class Ui_MainWindow(object):
         self.tableWidget_days.verticalHeader().setHighlightSections(False)
         self.tableWidget_days.verticalHeader().setMinimumSectionSize(0)
         self.verticalLayout_2.addWidget(self.tableWidget_days)
-        self.tableWidget_timetable = MyTableWidget(parent=self.centralwidget)
+        self.tableWidget_timetable = MyTableWidget(parent=self.centralwidget, mainapp=MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -180,7 +180,6 @@ class Ui_MainWindow(object):
         self.tableWidget_timetable.setAutoScroll(True)
         self.tableWidget_timetable.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tableWidget_timetable.setDragEnabled(True)
-        self.tableWidget_timetable.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
         self.tableWidget_timetable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.tableWidget_timetable.setObjectName("tableWidget_timetable")
         self.tableWidget_timetable.setColumnCount(0)
@@ -201,7 +200,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Расписание"))
         self.tbtn_newfile.setText(_translate("MainWindow", "Новый файл"))
         self.tbtn_open.setText(_translate("MainWindow", "Открыть"))
         self.tbtn_save.setText(_translate("MainWindow", "Сохранить"))

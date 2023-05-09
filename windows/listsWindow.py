@@ -35,4 +35,4 @@ class Ui_dialogLists(object):
 
     def retranslateUi(self, dialogLists):
         _translate = QtCore.QCoreApplication.translate
-        dialogLists.setWindowTitle(_translate("dialogLists", "Списки"))
+        dialogLists.setWindowTitle(_translate("dialogLists", "Данные школы"))

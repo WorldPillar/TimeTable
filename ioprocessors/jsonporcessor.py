@@ -6,19 +6,18 @@ from schooldata.school import Teacher, Subject, StudentClass, Lesson, School
 class JSONProcessor:
 
     @staticmethod
-    def json_read(root: str):
+    def json_read(root: str) -> School:
         try:
             f = open(root, 'r', encoding='utf8')
         except FileExistsError:
             print('Cant open file')
         else:
             with f:
-                try:
-                    import_data = json.load(f)
-                    school = JSONProcessor._json_parse(import_data)
-                    return school
-                except SyntaxError:
-                    print('Cant parse file')
+                import_data = json.load(f)
+                school = JSONProcessor._json_parse(import_data)
+                return school
+
+
 
     @staticmethod
     def _json_parse(import_data: dict) -> School:
@@ -72,12 +71,12 @@ class JSONProcessor:
         timetable = import_data['timetable']
         school.timetable = [[[school.lessons[lesson['lesson']] for lesson in les_pos] for les_pos in day
                              ] for day in timetable]
+
+        unallocated = import_data['unallocated']
+        school.unallocated = [school.lessons[lesson['lesson']] for lesson in unallocated]
         return school
 
     @staticmethod
     def json_save(root: str, school: School):
-        try:
-            with open(root, 'w', encoding='utf8') as f:
-                json.dump(school.toJSON(), f, ensure_ascii=False, indent=4)
-        except IOError:
-            print('Cant save file')
+        with open(root, 'w', encoding='utf8') as f:
+            json.dump(school.toJSON(), f, ensure_ascii=False, indent=4)

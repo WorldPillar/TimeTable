@@ -74,7 +74,7 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
         return
 
     def new(self):
-        dlg = TeacherDialog()
+        dlg = TeacherDialog(self)
         if dlg.exec():
             family = dlg.family_lineEdit.text()
             name = dlg.name_lineEdit.text()
@@ -93,7 +93,7 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
     def edit(self):
         position = self.tableWidget.selectedItems()[0].row()
         teacher = self.school.teachers[position]
-        dlg = TeacherDialog(teacher)
+        dlg = TeacherDialog(self, teacher)
         if dlg.exec():
             family = dlg.family_lineEdit.text()
             name = dlg.name_lineEdit.text()
@@ -117,6 +117,6 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
     def worktime(self):
         position = self.tableWidget.selectedItems()[0].row()
         teacher = self.school.teachers[position]
-        dlg = WorkTimeDialog(teacher)
+        dlg = WorkTimeDialog(self, teacher)
         dlg.exec()
         return

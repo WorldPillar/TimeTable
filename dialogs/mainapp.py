@@ -13,6 +13,7 @@ from schooldata.extendedRS import ExtendedRecursiveSwapping
 from schooldata.school import School
 from schooldata.validateData import Validator
 from windows import mainWindow, schoolWindow
+from dialogs.widgets.listWidget import MyListWidget
 
 desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
 
@@ -22,10 +23,9 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         super().__init__()
         self.school = None
         self.setupUi(self)
+        self.setWindowIcon(QIcon('icons/schoolicon.svg'))
         self.file_path = ''
         self.table_file_path = ''
-
-        self.tableWidget_timetable.mainapp = self
 
         self.tbtn_newfile.clicked.connect(self.new_file)
         self.tbtn_open.clicked.connect(self.open_file)
@@ -40,7 +40,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.set_export_actions()
         self.create_table()
 
-    def create_table(self, days_amount: int = 5, lessons_amount: int = 8):
+        self.unallocated_list = MyListWidget(self, self.tableWidget_timetable)
+        self.verticalLayout_2.addWidget(self.unallocated_list)
+        self.tableWidget_timetable.unallocated_list = self.unallocated_list
+
+    def create_table(self, days_amount: int = 5, lessons_amount: int = 6):
         """
         Вызов функций для создания заголовков таблиц. Вызывать функцию только при обновлении параметров школы.
         :param days_amount: количество учебных дней в неделю.
@@ -52,7 +56,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.tableWidget_timetable.create_table(days_amount, lessons_amount)
         return
 
-    def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 8):
+    def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 6):
         self.tableWidget_days.setRowCount(0)
         self.tableWidget_days.setFixedHeight(15)
         self.tableWidget_days.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -88,7 +92,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         return
 
     def new_file(self):
-        dlg = SchoolDialog()
+        dlg = SchoolDialog(self)
         if dlg.exec():
             name = dlg.name_lineEdit.text()
             lessons = dlg.amount_lessons_combobox.currentIndex()
@@ -99,19 +103,26 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
             self.set_buttons_available()
             self.create_table(days, lessons)
+            self.unallocated_list.clear()
 
         self.file_path = ''
         return
 
     def open_file(self):
-        (file_name, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Открыть", desktop, "*.json")
+        (file_name, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Открыть", desktop, "*.sked")
         if file_name != '':
             try:
                 self.school = JSONProcessor.json_read(file_name)
-            finally:
                 self.set_buttons_available()
                 self.create_table(self.school.amount_days, self.school.amount_lessons)
+                self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
                 self.tableWidget_timetable.fill_table(self.school)
+            except BaseException:
+                errorbox = QtWidgets.QMessageBox(self)
+                errorbox.setWindowTitle('Ошибка')
+                errorbox.setText('Не получилось открыть файл')
+                errorbox.exec()
+
         self.file_path = file_name
         return
 
@@ -121,8 +132,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         else:
             try:
                 JSONProcessor.json_save(self.file_path, self.school)
-            except NotADirectoryError:
-                print('error dir')
+            except BaseException:
+                errorbox = QtWidgets.QMessageBox(self)
+                errorbox.setWindowTitle('Ошибка')
+                errorbox.setText('Не получилось сохранить файл')
+                errorbox.exec()
         return
 
     def save_as_file(self):
@@ -130,12 +144,15 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if self.file_path != '':
             rout = self.file_path
 
-        (file_name, _) = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить как", rout, "*.json")
+        (file_name, _) = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить как", rout, "*.sked")
         if file_name != '':
             try:
                 JSONProcessor.json_save(file_name, self.school)
-            except NotADirectoryError:
-                print('error dir')
+            except BaseException:
+                errorbox = QtWidgets.QMessageBox(self)
+                errorbox.setWindowTitle('Ошибка')
+                errorbox.setText('Не получилось сохранить файл')
+                errorbox.exec()
 
         self.file_path = file_name
         return
@@ -157,7 +174,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if file_name != '':
             try:
                 if not ExcelProcessor.export_table(self.school, param, file_name):
-                    errorbox = QtWidgets.QMessageBox()
+                    errorbox = QtWidgets.QMessageBox(self)
                     errorbox.setWindowTitle('Ошибка')
                     errorbox.setText('Закройте excel файл перед сохранением')
                     errorbox.exec()
@@ -168,10 +185,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         return
 
     def input_lists_window(self, value: int):
-        dlg = ListDialog(self.school)
+        dlg = ListDialog(self, self.school)
         dlg.tabWidget.setCurrentIndex(value)
         dlg.exec()
         self.tableWidget_timetable.fill_table(self.school)
+        self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
         return
 
     def scheduling(self):
@@ -184,7 +202,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
             for comment in conflicts:
                 comments = comments + comment + '\n' + '\n'
 
-            msg = QtWidgets.QMessageBox()
+            msg = QtWidgets.QMessageBox(self)
             msg.setWindowTitle('Ошибки')
             msg.setText(comments)
             msg.exec()
@@ -194,6 +212,14 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         builder = ExtendedRecursiveSwapping(self.school)
         self.school = builder.start()
         self.tableWidget_timetable.fill_table(self.school)
+
+        self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
+        if len(self.school.unallocated) > 0:
+            msg = QtWidgets.QMessageBox(self)
+            msg.setWindowTitle('Неудача')
+            msg.setText(f'Не распределено {len(self.school.unallocated)} уроков.\n'
+                        f'Они были помещены в список внизу окна.')
+            msg.exec()
         return
 
     def set_buttons_available(self):
@@ -208,9 +234,10 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
 
 
 class SchoolDialog(QtWidgets.QDialog, schoolWindow.Ui_dialogSchool):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super(SchoolDialog, self).__init__(parent)
         self.setupUi(self)
+
         self.amount_lessons_combobox.addItems(SchoolData.max_lessons_in_day)
         self.amount_lessons_combobox.setCurrentIndex(7)
         self.amount_lessons_combobox.setFixedWidth(60)
@@ -218,3 +245,10 @@ class SchoolDialog(QtWidgets.QDialog, schoolWindow.Ui_dialogSchool):
         self.amount_days_combobox.addItems(SchoolData.get_days_positions())
         self.amount_days_combobox.setCurrentIndex(4)
         self.amount_days_combobox.setFixedWidth(60)
+
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)

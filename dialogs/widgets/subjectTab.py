@@ -73,7 +73,7 @@ class SubjectTab(QtWidgets.QTabWidget, tab.Ui_Form):
         return
 
     def new(self):
-        dlg = SubjectDialog()
+        dlg = SubjectDialog(self)
         if dlg.exec():
             name = dlg.name_lineEdit.text()
             abb = dlg.abb_lineEdit.text()
@@ -87,7 +87,7 @@ class SubjectTab(QtWidgets.QTabWidget, tab.Ui_Form):
     def edit(self):
         position = self.tableWidget.selectedItems()[0].row()
         subject = self.school.subjects[position]
-        dlg = SubjectDialog(subject)
+        dlg = SubjectDialog(self, subject)
         if dlg.exec():
             name = dlg.name_lineEdit.text()
             abb = dlg.abb_lineEdit.text()
@@ -105,6 +105,6 @@ class SubjectTab(QtWidgets.QTabWidget, tab.Ui_Form):
     def worktime(self):
         position = self.tableWidget.selectedItems()[0].row()
         subject = self.school.subjects[position]
-        dlg = WorkTimeDialog(subject)
+        dlg = WorkTimeDialog(self, subject)
         dlg.exec()
         return
