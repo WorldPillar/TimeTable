@@ -113,11 +113,16 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if file_name != '':
             try:
                 self.school = JSONProcessor.json_read(file_name)
-            finally:
                 self.set_buttons_available()
                 self.create_table(self.school.amount_days, self.school.amount_lessons)
                 self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
                 self.tableWidget_timetable.fill_table(self.school)
+            except BaseException:
+                errorbox = QtWidgets.QMessageBox(self)
+                errorbox.setWindowTitle('Ошибка')
+                errorbox.setText('Не получилось открыть файл')
+                errorbox.exec()
+
         self.file_path = file_name
         return
 
@@ -127,8 +132,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         else:
             try:
                 JSONProcessor.json_save(self.file_path, self.school)
-            except NotADirectoryError:
-                print('error dir')
+            except BaseException:
+                errorbox = QtWidgets.QMessageBox(self)
+                errorbox.setWindowTitle('Ошибка')
+                errorbox.setText('Не получилось сохранить файл')
+                errorbox.exec()
         return
 
     def save_as_file(self):
@@ -140,8 +148,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if file_name != '':
             try:
                 JSONProcessor.json_save(file_name, self.school)
-            except NotADirectoryError:
-                print('error dir')
+            except BaseException:
+                errorbox = QtWidgets.QMessageBox(self)
+                errorbox.setWindowTitle('Ошибка')
+                errorbox.setText('Не получилось сохранить файл')
+                errorbox.exec()
 
         self.file_path = file_name
         return

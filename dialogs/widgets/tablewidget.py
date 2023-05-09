@@ -7,9 +7,23 @@ from schooldata.data import SchoolData
 from schooldata.school import School, Lesson, StudentClass
 
 
-class MenuLabelAction(QtWidgets.QWidgetAction):
+class BookedMenuLabelAction(QtWidgets.QWidgetAction):
+    def __init__(self, parent, lesson: Lesson):
+        super(BookedMenuLabelAction, self).__init__(parent)
+        widget = QtWidgets.QWidget()
+
+        v_layout = QtWidgets.QVBoxLayout()
+        string = f'{lesson.subject.abbreviation} ({lesson.student_class.abbreviation})'
+        label = QtWidgets.QLabel(string)
+        v_layout.addWidget(label)
+
+        widget.setLayout(v_layout)
+        self.setDefaultWidget(widget)
+
+
+class EmptyMenuLabelAction(QtWidgets.QWidgetAction):
     def __init__(self, parent, student_class: StudentClass):
-        super(MenuLabelAction, self).__init__(parent)
+        super(EmptyMenuLabelAction, self).__init__(parent)
         widget = QtWidgets.QWidget()
 
         v_layout = QtWidgets.QVBoxLayout()
@@ -18,6 +32,7 @@ class MenuLabelAction(QtWidgets.QWidgetAction):
 
         widget.setLayout(v_layout)
         self.setDefaultWidget(widget)
+
 
 class ConflictAction(QtWidgets.QWidgetAction):
     def __init__(self, parent, conflicts, to_day, to_les_pos):
@@ -303,35 +318,62 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
         menu = QtWidgets.QMenu()
-        menu.setWindowTitle('Разместить урок')
 
         point = QPoint(int(a0.pos().x()), int(a0.pos().y()))
         to_index = self.indexAt(point)
         cell = self.itemAt(a0.pos())
+
         if cell is not None:
-            return
+            if not self.bookedCellMenu(menu, to_index, a0, cell):
+                return
+        else:
+            if not self.emptyCellMenu(menu, to_index, a0):
+                return
+        super(MyTableWidget, self).contextMenuEvent(a0)
+        return
+
+    def bookedCellMenu(self, menu: QtWidgets.QMenu, to_index: QtCore.QModelIndex,
+                       a0: QtGui.QContextMenuEvent, cell: QtWidgets.QTableWidgetItem) -> bool:
+
+        labelAction = BookedMenuLabelAction(menu, cell.lesson)
+        menu.addAction(labelAction)
+        throwAction = QtGui.QAction('Выбросить')
+        menu.addAction(throwAction)
+
+        action = menu.exec(a0.globalPos())
+        if action is None or action == labelAction:
+            return False
+
+        day, les_pos = utils.column_to_days_lessons(to_index.column(), self.mainapp.school.amount_lessons)
+        item = self.takeItem(to_index.row(), to_index.column())
+        self._throw_lesson(self.mainapp.school, item.lesson, day, les_pos)
+        return True
+
+    def emptyCellMenu(self, menu: QtWidgets.QMenu, to_index: QtCore.QModelIndex,
+                      a0: QtGui.QContextMenuEvent) -> bool:
 
         day, les_pos = utils.column_to_days_lessons(to_index.column(), self.mainapp.school.amount_lessons)
         av_items = self.unallocated_list.get_available_items(to_index.row(), day, les_pos)
         if len(av_items) == 0:
-            return
+            return False
 
-        menu.addAction(MenuLabelAction(menu, self.mainapp.school.student_classes[to_index.row()]))
+        labelAction = EmptyMenuLabelAction(menu, self.mainapp.school.student_classes[to_index.row()])
+        menu.addAction(labelAction)
+        actions = []
         for item in av_items:
             message = f'{item.lesson.subject.abbreviation} ({item.lesson.student_class.abbreviation})'
             action = QtGui.QAction(f'{message}')
             action.setData(item)
-            menu.addAction(action)
+            actions.append(action)
+        menu.addActions(actions)
 
         action = menu.exec(a0.globalPos())
-        if action is None:
-            return
+        if action is None or action == labelAction:
+            return False
 
         item = action.data()
         item = self.unallocated_list.takeItem(self.unallocated_list.row(item))
         from_lesson = item.lesson
         self.setItem(to_index.row(), to_index.column(), TimeTableItem(from_lesson))
         self._append_lesson(self.mainapp.school, from_lesson, day, les_pos)
-
-        super(MyTableWidget, self).contextMenuEvent(a0)
-        return
+        return True
