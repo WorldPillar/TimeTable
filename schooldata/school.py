@@ -101,13 +101,15 @@ class Subject:
 class Lesson:
     id_obj = itertools.count()
 
-    def __init__(self, subject: Subject, teacher: Teacher, student_class: StudentClass, amount: int):
+    def __init__(self, subject: Subject, teacher: Teacher, student_class: StudentClass, amount: int, duration: int = 1):
         self.id = next(Lesson.id_obj)
         self.subject: Subject = subject
         self.teacher: Teacher = teacher
         self.student_class: StudentClass = student_class
         self.amount: int = amount
         self.current_worktime = deepcopy(WorkTime.worktime)
+        self.duration: int = duration
+        self.lesson_start_end: list[{}] = []
         self._add_lesson_to_objects()
 
     def _add_lesson_to_objects(self):
@@ -123,7 +125,7 @@ class Lesson:
         return
 
     def update_lesson_data(self, subject: Subject = None, teacher: Teacher = None,
-                           student_class: StudentClass = None, amount: int = -1):
+                           student_class: StudentClass = None, amount: int = -1, duration: int = None):
         if subject is not None:
             self.subject.lessons_count -= self.amount
             self.subject = subject
@@ -136,6 +138,8 @@ class Lesson:
             self.student_class.lessons_count -= self.amount
             self.student_class = student_class
             self.student_class.lessons_count += self.amount
+        if duration is not None:
+            self.duration = duration
         if amount != -1:
             self.delete_lesson()
             self.amount = amount
@@ -143,18 +147,24 @@ class Lesson:
         return
 
     def is_available(self, day, lesson):
-        s = self.subject.worktime[day][lesson]
-        t = self.teacher.worktime[day][lesson]
-        c = self.student_class.worktime[day][lesson]
-        if s * t * c == 0:
+        if lesson + self.duration - 1 >= len(self.current_worktime[day]):
             return False
+        for i in range(lesson, lesson + self.duration):
+            s = self.subject.worktime[day][i]
+            t = self.teacher.worktime[day][i]
+            c = self.student_class.worktime[day][i]
+            if s * t * c == 0:
+                return False
         return True
 
     def current_available(self, day, lesson):
-        t = self.teacher_current_available(day, lesson)
-        c = self.student_class_current_available(day, lesson)
-        les = self.is_available_today(day)
-        return les and t and c
+        cur_av = True
+        for i in range(lesson, lesson + self.duration):
+            t = self.teacher_current_available(day, i)
+            c = self.student_class_current_available(day, i)
+            les = self.is_available_today(day)
+            cur_av = cur_av and les and t and c
+        return cur_av
 
     def teacher_current_available(self, day, lesson):
         if self.teacher.current_worktime[day][lesson] == 0:
@@ -173,16 +183,26 @@ class Lesson:
         return True
 
     def set_unavailable(self, day, lesson):
-        self.teacher.current_worktime[day][lesson] = 0
-        self.student_class.current_worktime[day][lesson] = 0
-        self.current_worktime[day][lesson] = 0
+        self.lesson_start_end.append({'day': day, 'start': lesson, 'end': lesson + self.duration - 1})
+        for i in range(lesson, lesson + self.duration):
+            self.teacher.current_worktime[day][i] = 0
+            self.student_class.current_worktime[day][i] = 0
+            self.current_worktime[day][i] = 0
         return
 
     def set_available(self, day, lesson):
-        self.teacher.current_worktime[day][lesson] = 1
-        self.student_class.current_worktime[day][lesson] = 1
-        self.current_worktime[day][lesson] = 1
+        start_end = self.get_start_end_lesson(day)
+        for i in range(start_end['start'], start_end['end'] + 1):
+            self.teacher.current_worktime[day][i] = 1
+            self.student_class.current_worktime[day][i] = 1
+            self.current_worktime[day][i] = 1
+        self.lesson_start_end.remove(start_end)
         return
+
+    def get_start_end_lesson(self, day: int):
+        for lesson in self.lesson_start_end:
+            if lesson['day'] == day:
+                return lesson
 
     def get_string(self):
         string = f'{self.subject.get_string()} {self.teacher.get_string()}' \
@@ -245,6 +265,7 @@ class School:
             student_class.current_worktime = deepcopy(WorkTime.worktime)
         for lesson in self.lessons:
             lesson.current_worktime = deepcopy(WorkTime.worktime)
+            lesson.lesson_start_end = []
         return
 
     def pop_subject(self, position):

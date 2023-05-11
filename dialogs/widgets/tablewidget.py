@@ -133,7 +133,11 @@ class MyTableWidget(QtWidgets.QTableWidget):
         for j in range(self.columnCount()):
             day, les_pos = utils.column_to_days_lessons(j, school.amount_lessons)
             lessons_in_slot = school.timetable[day][les_pos]
+            append = False
             for lesson in lessons_in_slot:
+                if lesson.duration > 1 and not append:
+                    self.setSpan(lesson.student_class.id, j, 1, lesson.duration)
+                    append = True
                 self.setItem(lesson.student_class.id, j, TimeTableItem(lesson))
 
     def set_color(self, on: bool):

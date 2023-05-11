@@ -137,6 +137,7 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
             self.class_combobox.setCurrentIndex(lesson.student_class.id)
             self.subject_combobox.setCurrentIndex(lesson.subject.id)
             self.count_combobox.setCurrentIndex(lesson.amount - 1)
+            self.duration_combobox.setCurrentIndex(lesson.duration - 1)
 
     def fill_combobox(self):
         self.teacher_combobox.addItems([x.get_string() for x in self.school.teachers])
@@ -147,6 +148,8 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         self.subject_combobox.setCurrentIndex(-1)
         self.count_combobox.addItems(SchoolData.get_max_lesson_in_week(self.school.amount_days))
         self.count_combobox.setCurrentIndex(-1)
+        self.duration_combobox.addItems(['1', '2'])
+        self.duration_combobox.setCurrentIndex(-1)
 
     def accept(self) -> None:
         if (self.teacher_combobox.currentIndex() == -1) or (self.class_combobox.currentIndex() == -1) or \

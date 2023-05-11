@@ -13,7 +13,7 @@ class ExtendedRecursiveSwapping:
         self.school.unallocated = []
 
     def sort(self):
-        self.school.lessons.sort(key=lambda x: x.amount, reverse=True)
+        self.school.lessons.sort(key=lambda x: x.amount * x.duration, reverse=True)
 
     def start(self) -> School:
         self.sort()
@@ -21,7 +21,7 @@ class ExtendedRecursiveSwapping:
         for lesson in range(len(self.school.lessons)):
             for lesson_amount in range(self.school.lessons[lesson].amount):
                 is_append = False
-                for i in range(self.amount_lessons):
+                for i in range(self.amount_lessons - self.school.lessons[lesson].duration + 1):
                     if is_append:
                         break
                     for j in range(self.amount_days):
@@ -43,7 +43,7 @@ class ExtendedRecursiveSwapping:
                 count += len(les_pos)
         lessons_count = 0
         for lesson in self.school.lessons:
-            lessons_count += lesson.amount
+            lessons_count += lesson.amount * lesson.duration
         print(f"Всего уроков: {lessons_count}")
         print(f"Не распределено уроков: {lessons_count - count}")
         self.school.lessons.sort(key=lambda x: x.id, reverse=False)
@@ -52,7 +52,8 @@ class ExtendedRecursiveSwapping:
     @staticmethod
     def try_insert_lesson(school: School, lesson: Lesson, day: int, lesson_pos: int) -> bool:
         if lesson.is_available(day, lesson_pos) and lesson.current_available(day, lesson_pos):
-            school.timetable[day][lesson_pos].append(lesson)
+            for i in range(lesson.duration):
+                school.timetable[day][lesson_pos + i].append(lesson)
             lesson.set_unavailable(day, lesson_pos)
             return True
         else:
@@ -83,7 +84,7 @@ class ExtendedRecursiveSwapping:
         is_swappable = True
         while is_swappable:
 
-            (day, lesson_position) = self.find_min(conflicts)
+            (day, lesson_position) = self.find_min(conflicts, unallocated_lesson)
             if day == -1 or lesson_position == -1:
                 print('Day and Lesson position is -1')
                 print(f'Нераспределенный урок: {unallocated_lesson.get_string()}')
@@ -113,7 +114,7 @@ class ExtendedRecursiveSwapping:
         :param step: Шаг рекурсии.
         :return: Результат рекурсии в виде bool и объект School.
         """
-        for i in range(self.amount_lessons):
+        for i in range(self.amount_lessons - popped_lesson.duration + 1):
             for j in range(self.amount_days):
                 if self.try_insert_lesson(school, popped_lesson, j, i):
                     return True, school
@@ -130,12 +131,14 @@ class ExtendedRecursiveSwapping:
         :param step: Шаг рекурсии.
         :return: Результат в виде bool.
         """
+        if lesson.id == 256:
+            pass
         popped_lessons = self.throw_conflicts(school, lesson, day, les_pos)
         if conflicts[day][les_pos] >= 100:
             popped_lessons.append(self.throw_same_lesson(school, lesson, day))
 
         if not self.try_insert_lesson(school, lesson, day, les_pos):
-            print('not insert but should')
+            print(f'not insert but should {lesson.get_string()}')
 
         for lesson in popped_lessons:
             try_append, copy_school = self.try_to_place(school, lesson, step)
@@ -143,29 +146,31 @@ class ExtendedRecursiveSwapping:
                 return False
         return True
 
-    @staticmethod
-    def throw_conflicts(school: School, unallocated_lesson: Lesson, day: int, lesson_position: int) -> list[Lesson]:
+    def throw_conflicts(self, school: School, unallocated_lesson: Lesson, day: int, lesson_position: int) -> list[Lesson]:
         """
         Метод выбрасывает конфликтные уроки, мешающие поместить переданный в метод урок на определенную позицию дня.
         :return: Список выброшенных конфликтных уроков.
         """
         popped_lessons = []
-        lessons_amount = len(school.timetable[day][lesson_position])
-        i = 0
-        while i != lessons_amount:
-            same_teacher = school.timetable[day][lesson_position][i].teacher == unallocated_lesson.teacher
-            same_class = school.timetable[day][lesson_position][i].student_class == unallocated_lesson.student_class
-            if same_teacher or same_class:
-                popped = school.timetable[day][lesson_position].pop(i)
-                popped.set_available(day, lesson_position)
-                popped_lessons.append(popped)
-                lessons_amount -= 1
-            else:
-                i += 1
+        for d in range(unallocated_lesson.duration):
+            lesson_position = lesson_position + d
+            lessons_amount = len(school.timetable[day][lesson_position])
+            i = 0
+            while i != lessons_amount:
+                same_teacher = school.timetable[day][lesson_position][i].teacher == unallocated_lesson.teacher
+                same_class = school.timetable[day][lesson_position][i].student_class == unallocated_lesson.student_class
+                if same_teacher or same_class:
+                    popped = school.timetable[day][lesson_position][i]
+                    self.remove_duration(school, popped, day)
+
+                    popped.set_available(day, lesson_position)
+                    popped_lessons.append(popped)
+                    lessons_amount -= 1
+                else:
+                    i += 1
         return popped_lessons
 
-    @staticmethod
-    def throw_same_lesson(school: School, unallocated_lesson: Lesson, day: int) -> Lesson:
+    def throw_same_lesson(self, school: School, unallocated_lesson: Lesson, day: int) -> Lesson:
         """
         Метод, выбрасывающий конфликтный урок, совпадающий с нераспределенным в определенный день.
         :return: Выброшенный конфликтный урок.
@@ -173,9 +178,21 @@ class ExtendedRecursiveSwapping:
         for les_pos in range(len(school.timetable[day])):
             for lesson in range(len(school.timetable[day][les_pos])):
                 if school.timetable[day][les_pos][lesson] == unallocated_lesson:
-                    popped = school.timetable[day][les_pos].pop(lesson)
+                    popped = school.timetable[day][les_pos][lesson]
+                    self.remove_duration(school, popped, day)
+
                     popped.set_available(day, les_pos)
                     return popped
+
+    @staticmethod
+    def remove_duration(school: School, lesson: Lesson, day: int):
+        start_end = lesson.get_start_end_lesson(day)
+        for i in range(start_end['start'], start_end['end'] + 1):
+            for j in range(len(school.timetable[day][i])):
+                if school.timetable[day][i][j] == lesson:
+                    school.timetable[day][i].remove(lesson)
+                    break
+        return
 
     def find_conflicts(self, school: School, unallocated_lesson: Lesson) -> list[list[int]]:
         """
@@ -186,20 +203,21 @@ class ExtendedRecursiveSwapping:
         """
         conflicts = [[0 for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]
         for i in range(self.amount_days):
-            for j in range(self.amount_lessons):
-                if not unallocated_lesson.is_available(i, j):
-                    conflicts[i][j] = -1
-                    continue
-                for allocated_lesson in school.timetable[i][j]:
-                    if allocated_lesson.teacher == unallocated_lesson.teacher:
-                        conflicts[i][j] += 1
-                    if allocated_lesson.student_class == unallocated_lesson.student_class:
-                        conflicts[i][j] += 1
-                if not unallocated_lesson.is_available_today(i):
-                    conflicts[i][j] += 100
+            for j in range(self.amount_lessons - unallocated_lesson.duration + 1):
+                for k in range(unallocated_lesson.duration):
+                    if not unallocated_lesson.is_available(i, j):
+                        conflicts[i][j] = -1
+                        continue
+                    for allocated_lesson in school.timetable[i][j]:
+                        if allocated_lesson.teacher == unallocated_lesson.teacher:
+                            conflicts[i][j] += 1
+                        if allocated_lesson.student_class == unallocated_lesson.student_class:
+                            conflicts[i][j] += 1
+                    if not unallocated_lesson.is_available_today(i):
+                        conflicts[i][j] += 100
         return conflicts
 
-    def find_min(self, conflicts) -> (int, int):
+    def find_min(self, conflicts, unallocated_lesson: Lesson) -> (int, int):
         """
         Метод находит день и позицию урока с минимальным числом конфликтов.
         :return: (день, позиция урока)
@@ -207,7 +225,7 @@ class ExtendedRecursiveSwapping:
         minimum = sys.maxsize
         (day, lesson_position) = (-1, -1)
         for i in range(self.amount_days):
-            for j in range(self.amount_lessons):
+            for j in range(self.amount_lessons - unallocated_lesson.duration + 1):
                 if conflicts[i][j] == -1 or conflicts[i][j] == 102:
                     continue
                 if conflicts[i][j] < minimum:
