@@ -133,11 +133,13 @@ class MyListWidget(QtWidgets.QListWidget):
 
     @staticmethod
     def _throw_lesson(school: School, throw_lesson: Lesson, day: int, les_pos: int):
-        for lesson in range(len(school.timetable[day][les_pos])):
-            if school.timetable[day][les_pos][lesson] == throw_lesson:
-                school.timetable[day][les_pos].pop(lesson)
-                throw_lesson.set_available(day, les_pos)
-                return
+        school.remove_duration(throw_lesson, day, les_pos)
+        throw_lesson.set_available(day, les_pos)
+        # for lesson in range(len(school.timetable[day][les_pos])):
+        #     if school.timetable[day][les_pos][lesson] == throw_lesson:
+        #         school.timetable[day][les_pos].pop(lesson)
+        #         throw_lesson.set_available(day, les_pos)
+        #         return
         return
 
     def takeItem(self, row: int) -> QtWidgets.QListWidgetItem:

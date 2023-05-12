@@ -161,7 +161,7 @@ class ExtendedRecursiveSwapping:
                 same_class = school.timetable[day][lesson_position][i].student_class == unallocated_lesson.student_class
                 if same_teacher or same_class:
                     popped = school.timetable[day][lesson_position][i]
-                    self.remove_duration(school, popped, day)
+                    school.remove_duration(popped, day, lesson_position)
 
                     popped.set_available(day, lesson_position)
                     popped_lessons.append(popped)
@@ -179,20 +179,10 @@ class ExtendedRecursiveSwapping:
             for lesson in range(len(school.timetable[day][les_pos])):
                 if school.timetable[day][les_pos][lesson] == unallocated_lesson:
                     popped = school.timetable[day][les_pos][lesson]
-                    self.remove_duration(school, popped, day)
+                    school.remove_duration(popped, day, les_pos)
 
                     popped.set_available(day, les_pos)
                     return popped
-
-    @staticmethod
-    def remove_duration(school: School, lesson: Lesson, day: int):
-        start_end = lesson.get_start_end_lesson(day)
-        for i in range(start_end['start'], start_end['end'] + 1):
-            for j in range(len(school.timetable[day][i])):
-                if school.timetable[day][i][j] == lesson:
-                    school.timetable[day][i].remove(lesson)
-                    break
-        return
 
     def find_conflicts(self, school: School, unallocated_lesson: Lesson) -> list[list[int]]:
         """

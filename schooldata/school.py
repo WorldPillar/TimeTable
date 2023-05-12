@@ -109,7 +109,7 @@ class Lesson:
         self.amount: int = amount
         self.current_worktime = deepcopy(WorkTime.worktime)
         self.duration: int = duration
-        self.lesson_start_end: list[{}] = []
+        self.start_end_positions: list[{}] = []
         self._add_lesson_to_objects()
 
     def _add_lesson_to_objects(self):
@@ -183,7 +183,7 @@ class Lesson:
         return True
 
     def set_unavailable(self, day, lesson):
-        self.lesson_start_end.append({'day': day, 'start': lesson, 'end': lesson + self.duration - 1})
+        self.start_end_positions.append({'day': day, 'start': lesson, 'end': lesson + self.duration - 1})
         for i in range(lesson, lesson + self.duration):
             self.teacher.current_worktime[day][i] = 0
             self.student_class.current_worktime[day][i] = 0
@@ -191,17 +191,17 @@ class Lesson:
         return
 
     def set_available(self, day, lesson):
-        start_end = self.get_start_end_lesson(day)
+        start_end = self.get_start_end_lesson(day, lesson)
         for i in range(start_end['start'], start_end['end'] + 1):
             self.teacher.current_worktime[day][i] = 1
             self.student_class.current_worktime[day][i] = 1
             self.current_worktime[day][i] = 1
-        self.lesson_start_end.remove(start_end)
+        self.start_end_positions.remove(start_end)
         return
 
-    def get_start_end_lesson(self, day: int):
-        for lesson in self.lesson_start_end:
-            if lesson['day'] == day:
+    def get_start_end_lesson(self, day: int, start: int):
+        for lesson in self.start_end_positions:
+            if lesson['day'] == day and lesson['start'] <= start <= lesson['end']:
                 return lesson
 
     def get_string(self):
@@ -265,7 +265,7 @@ class School:
             student_class.current_worktime = deepcopy(WorkTime.worktime)
         for lesson in self.lessons:
             lesson.current_worktime = deepcopy(WorkTime.worktime)
-            lesson.lesson_start_end = []
+            lesson.start_end_positions = []
         return
 
     def pop_subject(self, position):
@@ -334,6 +334,31 @@ class School:
         self.unallocated = [lesson for lesson in self.unallocated if lesson != popped]
         return
 
+    def update_lesson_duration(self, lesson: Lesson, old_duration):
+        if lesson.duration == old_duration:
+            return
+        elif lesson.duration > old_duration:
+            for day in self.timetable:
+                for les_pos in day:
+                    for located_lesson in les_pos:
+                        if located_lesson == lesson:
+                            les_pos.remove(located_lesson)
+                            break
+            for i in range(lesson.amount):
+                self.unallocated.append(lesson)
+            self.unallocated.sort(key=lambda x: x.id, reverse=False)
+        else:
+            for day in self.timetable:
+                duration = lesson.duration
+                for les_pos in day:
+                    for located_lesson in les_pos:
+                        if located_lesson == lesson:
+                            if duration != 0:
+                                duration -= 1
+                            else:
+                                les_pos.remove(located_lesson)
+                            break
+
     def update_lesson_amount(self, lesson: Lesson, old_amount):
         amount = lesson.amount - old_amount
         if amount == 0:
@@ -370,20 +395,32 @@ class School:
                   ] for day in range(self.amount_days)]
         conflicts = [[[] for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]
         for day in range(self.amount_days):
-            for les_pos in range(self.amount_lessons):
-                for receiver in self.timetable[day][les_pos]:
-                    if receiver == sender and day != from_day:
-                        for pos in range(self.amount_lessons):
-                            times[day][pos] = False
-                            conflicts[day][pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                        break
+            for les_pos in range(self.amount_lessons - sender.duration + 1):
+                for d in range(sender.duration):
+                    for receiver in self.timetable[day][les_pos + d]:
+                        if receiver == sender and day != from_day:
+                            for pos in range(self.amount_lessons):
+                                times[day][pos + d] = False
+                                conflicts[day][pos].append(
+                                    {"lesson": receiver, "day": day, "position": les_pos + d})
+                            break
 
-                    if receiver.teacher == sender.teacher:
-                        if receiver.student_class != sender.student_class:
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
+                        if receiver.teacher == sender.teacher:
+                            if receiver.student_class != sender.student_class:
+                                times[day][les_pos + d] = False
+                                conflicts[day][les_pos].append(
+                                    {"lesson": receiver, "day": day, "position": les_pos + d})
+                                continue
         return times, conflicts
+
+    def remove_duration(self, lesson: Lesson, day: int, les_pos: int):
+        start_end = lesson.get_start_end_lesson(day, les_pos)
+        for i in range(start_end['start'], start_end['end'] + 1):
+            for j in range(len(self.timetable[day][i])):
+                if self.timetable[day][i][j] == lesson:
+                    self.timetable[day][i].remove(lesson)
+                    break
+        return
 
     def toJSON(self):
         school_tojson = {"name": self.name,

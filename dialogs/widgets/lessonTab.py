@@ -86,8 +86,10 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             duration = dlg.duration_combobox.currentIndex() + 1
 
             old_amount = lesson.amount
+            old_duration = lesson.duration
             lesson.update_lesson_data(subject, teacher, student_class, amount, duration)
             self.school.update_lesson_amount(lesson, old_amount)
+            self.school.update_lesson_duration(lesson, old_duration)
 
             self.update_row(self.tableWidget, lesson, position)
         return
