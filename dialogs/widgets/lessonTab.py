@@ -1,3 +1,5 @@
+from copy import copy, deepcopy
+
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QTableWidgetItem
 
@@ -67,6 +69,11 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             duration = dlg.count_combobox.currentIndex() + 1
             lesson = Lesson(subject, teacher, student_class, amount, duration)
             self.school.lessons.append(lesson)
+
+            if dlg.secondTeacherCombobox is not None:
+                secondTeacher = self.school.teachers[dlg.secondTeacherCombobox.currentIndex()]
+                lesson.teacher.append(secondTeacher)
+
             self.school.update_lesson_amount(lesson, 0)
 
             self.insert_row(self.tableWidget, lesson)
@@ -79,7 +86,10 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
         lesson = self.school.lessons[position]
         dlg = LessonDialog(self, self.school, lesson)
         if dlg.exec():
-            teacher = self.school.teachers[dlg.teacher_combobox.currentIndex()]
+            teachers = [self.school.teachers[dlg.teacher_combobox.currentIndex()]]
+            if dlg.secondTeacherCombobox is not None:
+                secondTeacher = self.school.teachers[dlg.secondTeacherCombobox.currentIndex()]
+                teachers.append(secondTeacher)
             subject = self.school.subjects[dlg.subject_combobox.currentIndex()]
             student_class = self.school.student_classes[dlg.class_combobox.currentIndex()]
             amount = int(SchoolData.get_max_lesson_in_week(self.school.amount_days)[dlg.count_combobox.currentIndex()])
@@ -87,9 +97,13 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
 
             old_amount = lesson.amount
             old_duration = lesson.duration
-            lesson.update_lesson_data(subject, teacher, student_class, amount, duration)
-            self.school.update_lesson_amount(lesson, old_amount)
-            self.school.update_lesson_duration(lesson, old_duration)
+            old_teachers = deepcopy(lesson.teacher)
+            old_subject = deepcopy(lesson.subject)
+            old_class = deepcopy(lesson.student_class)
+
+            lesson.update_lesson_data(subject, teachers, student_class, amount, duration)
+            self.school.update_lesson_by_old(lesson, old_subject, old_class, old_teachers,
+                                             old_amount, old_duration)
 
             self.update_row(self.tableWidget, lesson, position)
         return

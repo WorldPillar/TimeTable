@@ -1,7 +1,7 @@
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView, QDialogButtonBox
+from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView, QDialogButtonBox, QPushButton, QComboBox, QWidget
 
 from schooldata.data import SchoolData
 from schooldata.school import School, Subject, StudentClass, Teacher, Lesson
@@ -130,14 +130,47 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
         self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
 
+        self.deleteButton = QPushButton('Удалить')
+        self.deleteButton.clicked.connect(self.pushButtonAdd)
+        self.gridLayout_2.addWidget(self.deleteButton, 3, 1)
+
+        self.secondTeacherCombobox: QComboBox = None
+        self.pushButtonAdd()
+
         self.school = school
         self.fill_combobox()
         if lesson is not None:
-            self.teacher_combobox.setCurrentIndex(lesson.teacher.id)
+            self.teacher_combobox.setCurrentIndex(lesson.teacher[0].id)
+            if len(lesson.teacher) == 2:
+                self.putCombobox(lesson.teacher[1].id)
+
             self.class_combobox.setCurrentIndex(lesson.student_class.id)
             self.subject_combobox.setCurrentIndex(lesson.subject.id)
             self.count_combobox.setCurrentIndex(lesson.amount - 1)
             self.duration_combobox.setCurrentIndex(lesson.duration - 1)
+
+    def pushButtonAdd(self) -> QPushButton:
+        buttonAdd = QPushButton('Добавить')
+        buttonAdd.clicked.connect(self.addCombobox)
+        self.secondTeacherCombobox = None
+
+        self.gridLayout_2.addWidget(buttonAdd, 2, 1)
+        if self.deleteButton is not None:
+            self.gridLayout_2.itemAtPosition(3, 1).widget().hide()
+        return buttonAdd
+
+    def addCombobox(self):
+        self.putCombobox(-1)
+        return
+
+    def putCombobox(self, teacherId: int = -1):
+        self.secondTeacherCombobox = QComboBox()
+        self.secondTeacherCombobox.addItems([x.get_string() for x in self.school.teachers])
+        self.secondTeacherCombobox.setCurrentIndex(teacherId)
+        self.gridLayout_2.itemAtPosition(3, 1).widget().show()
+
+        self.gridLayout_2.addWidget(self.secondTeacherCombobox, 2, 1)
+        return
 
     def fill_combobox(self):
         self.teacher_combobox.addItems([x.get_string() for x in self.school.teachers])
@@ -155,6 +188,11 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         if (self.teacher_combobox.currentIndex() == -1) or (self.class_combobox.currentIndex() == -1) or \
                 (self.subject_combobox.currentIndex() == -1) or (self.count_combobox.currentIndex() == -1):
             return
+        if self.secondTeacherCombobox is not None:
+            if self.teacher_combobox.currentIndex() == self.secondTeacherCombobox.currentIndex():
+                return
+            if self.secondTeacherCombobox.currentIndex() == -1:
+                return
         super().accept()
 
 

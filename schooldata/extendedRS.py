@@ -157,9 +157,8 @@ class ExtendedRecursiveSwapping:
             lessons_amount = len(school.timetable[day][lesson_position])
             i = 0
             while i != lessons_amount:
-                same_teacher = school.timetable[day][lesson_position][i].teacher == unallocated_lesson.teacher
-                same_class = school.timetable[day][lesson_position][i].student_class == unallocated_lesson.student_class
-                if same_teacher or same_class:
+                conflicts = self.get_conflict_amount(school.timetable[day][lesson_position][i], unallocated_lesson)
+                if conflicts > 0:
                     popped = school.timetable[day][lesson_position][i]
                     school.remove_duration(popped, day, lesson_position)
 
@@ -184,6 +183,18 @@ class ExtendedRecursiveSwapping:
                     popped.set_available(day, les_pos)
                     return popped
 
+    @staticmethod
+    def get_conflict_amount(lesson: Lesson, another_lesson: Lesson):
+        conflicts = 0
+        for teacher in lesson.teacher:
+            for another_teacher in another_lesson.teacher:
+                if teacher == another_teacher:
+                    conflicts += 1
+                    break
+        if lesson.student_class == another_lesson.student_class:
+            conflicts += 1
+        return conflicts
+
     def find_conflicts(self, school: School, unallocated_lesson: Lesson) -> list[list[int]]:
         """
         Метод находит число конфликтов, мешающих поместить нераспределенный урок на данную позицию
@@ -199,10 +210,7 @@ class ExtendedRecursiveSwapping:
                         conflicts[i][j] = -1
                         continue
                     for allocated_lesson in school.timetable[i][j]:
-                        if allocated_lesson.teacher == unallocated_lesson.teacher:
-                            conflicts[i][j] += 1
-                        if allocated_lesson.student_class == unallocated_lesson.student_class:
-                            conflicts[i][j] += 1
+                        conflicts[i][j] += self.get_conflict_amount(allocated_lesson, unallocated_lesson)
                     if not unallocated_lesson.is_available_today(i):
                         conflicts[i][j] += 100
         return conflicts

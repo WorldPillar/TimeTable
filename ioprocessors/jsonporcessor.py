@@ -60,11 +60,15 @@ class JSONProcessor:
 
         for lesson in import_data['lessons']:
             subject = school.subjects[lesson['subject']]
-            teacher = school.teachers[lesson['teacher']]
+            teachers = [school.teachers[teacher_id['teacher']] for teacher_id in lesson['teachers']]
             student_class = school.student_classes[lesson['student_class']]
             amount = lesson['amount']
+            duration = lesson['duration']
+            start_end_positions = lesson['start_end_positions']
             current_worktime = lesson['current_worktime']
-            new_lesson = Lesson(subject, teacher, student_class, amount)
+            new_lesson = Lesson(subject, teachers[0], student_class, amount, duration)
+            new_lesson.update_lesson_data(teachers=teachers)
+            new_lesson.start_end_positions = start_end_positions
             new_lesson.current_worktime = current_worktime
             school.lessons.append(new_lesson)
 

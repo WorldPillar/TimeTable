@@ -82,10 +82,12 @@ class TimeTableItem(QtWidgets.QTableWidgetItem):
         self.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def set_tooltip_info(self):
+        teachers_name = ''
+        for teacher in self.lesson.teacher:
+            teachers_name = teachers_name + f'{str(teacher.abbreviation or "")} - '\
+                                            f'{str(teacher.family or "")} {str(teacher.name or "")}\n'
         tooltip = f'{str(self.lesson.subject.abbreviation or "")} - {self.lesson.subject.name}\n' \
-                  f'{self.lesson.student_class.name}\n' \
-                  f'{str(self.lesson.teacher.abbreviation or "")} - ' \
-                  f'{str(self.lesson.teacher.family or "")} {str(self.lesson.teacher.name or "")}'
+                  f'{self.lesson.student_class.name}\n' + teachers_name
         return tooltip
 
     def update(self):
@@ -178,29 +180,26 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
     def dragLeaveEvent(self, e: QtGui.QDragLeaveEvent) -> None:
         self.reset_conflicts()
-        index = self.selectedIndexes()[0]
-        if index is not None:
-            item = self.itemFromIndex(index)
-            if item is not None:
-                self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
+        if len(self.selectedIndexes()) != 0:
+            index = self.selectedIndexes()[0]
+            if index is not None:
+                item = self.itemFromIndex(index)
+                if item is not None:
+                    self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
 
         super(MyTableWidget, self).dragLeaveEvent(e)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
         self.mark_conflicts(self.mainapp.school.amount_lessons)
-        index = self.selectedIndexes()[0]
-        if index is not None:
-            item = self.itemFromIndex(index)
-            if item is not None:
-                self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
+        if len(self.selectedIndexes()) != 0:
+            index = self.selectedIndexes()[0]
+            if index is not None:
+                item = self.itemFromIndex(index)
+                if item is not None:
+                    item.setText('')
+                    self.setSpan(index.row(), index.column(), 1, 1)
 
         super(MyTableWidget, self).dragEnterEvent(e)
-
-    def dragMoveEvent(self, e: QtGui.QDragMoveEvent) -> None:
-        from_index = self.selectedIndexes()[0]
-        self.setSpan(from_index.row(), from_index.column(), 1, 1)
-        super(MyTableWidget, self).dragMoveEvent(e)
-        return
 
     def startDrag(self, supportedActions: QtCore.Qt.DropAction) -> None:
         from_index = self.selectedIndexes()[0]
@@ -230,6 +229,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
                 index = self.selectedIndexes()[0]
                 item = sender.itemFromIndex(index)
                 if item is not None:
+                    item.update()
                     self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
         return
 

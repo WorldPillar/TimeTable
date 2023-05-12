@@ -33,7 +33,7 @@ def _get_name(school: School, pos: int, param: str) -> str:
         return school.teachers[pos].get_name()
 
 
-def _get_id(lesson: Lesson, param: str) -> int:
+def _get_id(lesson: Lesson, param: str) -> [int]:
     """
     Возвращает id объекта student_class при param 'class'
      или id объекта teacher при param 'teacher' у объекта lesson
@@ -41,9 +41,9 @@ def _get_id(lesson: Lesson, param: str) -> int:
     :param param: 'class' или 'teacher'
     """
     if param == 'class':
-        return lesson.student_class.id
+        return [lesson.student_class.id]
     else:
-        return lesson.teacher.id
+        return [teacher.id for teacher in lesson.teacher]
 
 
 class ExcelProcessor:
@@ -130,11 +130,13 @@ class ExcelProcessor:
             for j in range(school.amount_lessons * school.amount_days):
                 day, les_pos = utils.column_to_days_lessons(j, school.amount_lessons)
                 for les in school.timetable[day][les_pos]:
-                    lesson_cell = ws.cell(j + 2, _get_id(les, param) + 3)
-                    lesson_cell.alignment = Alignment(horizontal='center', vertical='center')
+                    ids = _get_id(les, param)
+                    for one_id in ids:
+                        lesson_cell = ws.cell(j + 2, one_id + 3)
+                        lesson_cell.alignment = Alignment(horizontal='center', vertical='center')
 
-                    output = les.student_class.name if param == 'teacher' else les.subject.abbreviation
-                    lesson_cell.value = output
+                        output = les.student_class.name if param == 'teacher' else les.subject.abbreviation
+                        lesson_cell.value = output
 
         try:
             wb.save(rout)

@@ -24,11 +24,14 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
         self.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def set_tooltip_info(self):
+        teachers_name = ''
+        for teacher in self.lesson.teacher:
+            teachers_name = teachers_name + f'{str(teacher.abbreviation or "")} - '\
+                                            f'{str(teacher.family or "")} {str(teacher.name or "")}\n'
         tooltip = f'{str(self.lesson.subject.abbreviation or "")} - {self.lesson.subject.name}\n' \
-                  f'{self.lesson.student_class.name}\n' \
-                  f'{str(self.lesson.teacher.abbreviation or "")} - ' \
-                  f'{str(self.lesson.teacher.family or "")} {str(self.lesson.teacher.name or "")}\n' \
-                  f'Количество - {self.amount}'
+                  f'{self.lesson.student_class.name}\n'\
+                  + teachers_name + f'Длительность - {self.lesson.duration}\n'\
+                  + f'Количество - {self.amount}\n'
         return tooltip
 
     def update(self):
@@ -104,6 +107,7 @@ class MyListWidget(QtWidgets.QListWidget):
 
     def startDrag(self, supportedActions: QtCore.Qt.DropAction) -> None:
         school = self.mainapp.school
+        self.timetable.clearSelection()
 
         selected_item = self.selectedItems()[0]
         self.last_selected_row = selected_item.lesson.student_class.id
