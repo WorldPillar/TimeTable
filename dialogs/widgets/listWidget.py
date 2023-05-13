@@ -1,5 +1,3 @@
-from typing import List
-
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QAbstractItemView, QListWidgetItem
@@ -15,15 +13,16 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
         self.lesson = lesson
         self.amount = amount
         self.setText(lesson.subject.abbreviation)
-        self.setToolTip(self.set_tooltip_info())
+        self.set_tooltip_info()
         self.set_controls()
 
-    def set_controls(self):
+    def set_controls(self) -> None:
         self.setSizeHint(QSize(45, 28))
         self.setBackground(QtGui.QColor(255, 255, 255))
         self.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        return
 
-    def set_tooltip_info(self):
+    def set_tooltip_info(self) -> None:
         teachers_name = ''
         for teacher in self.lesson.teacher:
             teachers_name = teachers_name + f'{str(teacher.abbreviation or "")} - '\
@@ -32,20 +31,21 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
                   f'{self.lesson.student_class.name}\n'\
                   + teachers_name + f'Длительность - {self.lesson.duration}\n'\
                   + f'Количество - {self.amount}\n'
-        return tooltip
+        self.setToolTip(tooltip)
+        return
 
-    def update(self):
+    def update(self) -> None:
         self.setText(self.lesson.subject.abbreviation)
         return
 
     def add_count(self) -> int:
         self.amount += 1
-        self.setToolTip(self.set_tooltip_info())
+        self.set_tooltip_info()
         return self.amount
 
     def remove_count(self) -> int:
         self.amount -= 1
-        self.setToolTip(self.set_tooltip_info())
+        self.set_tooltip_info()
         return self.amount
 
 
@@ -93,7 +93,7 @@ class MyListWidget(QtWidgets.QListWidget):
         self.addItem(item)
         return
 
-    def add_unallocated_lesson(self, lesson: Lesson):
+    def add_unallocated_lesson(self, lesson: Lesson) -> None:
         for pos in range(self.count()):
             if lesson == self.item(pos).lesson:
                 self.mainapp.school.unallocated.append(lesson)
@@ -114,7 +114,7 @@ class MyListWidget(QtWidgets.QListWidget):
         self.set_color(True)
 
         self.timetable.swapping_available, self.timetable.conflicts =\
-            school.append_pos(selected_item.lesson)
+            school.get_lesson_conflicts(selected_item.lesson)
         self.timetable.mark_conflicts(school.amount_lessons)
 
         super(MyListWidget, self).startDrag(supportedActions)
@@ -136,14 +136,9 @@ class MyListWidget(QtWidgets.QListWidget):
         return
 
     @staticmethod
-    def _throw_lesson(school: School, throw_lesson: Lesson, day: int, les_pos: int):
+    def _throw_lesson(school: School, throw_lesson: Lesson, day: int, les_pos: int) -> None:
         school.remove_duration(throw_lesson, day, les_pos)
         throw_lesson.set_available(day, les_pos)
-        # for lesson in range(len(school.timetable[day][les_pos])):
-        #     if school.timetable[day][les_pos][lesson] == throw_lesson:
-        #         school.timetable[day][les_pos].pop(lesson)
-        #         throw_lesson.set_available(day, les_pos)
-        #         return
         return
 
     def takeItem(self, row: int) -> QtWidgets.QListWidgetItem:
@@ -170,7 +165,7 @@ class MyListWidget(QtWidgets.QListWidget):
                 available_items.append(self.item(pos))
         return available_items
 
-    def set_color(self, on: bool):
+    def set_color(self, on: bool) -> None:
         item = self.timetable.verticalHeaderItem(self.last_selected_row)
         if on:
             item.setBackground(QtGui.QColor(0, 204, 0))

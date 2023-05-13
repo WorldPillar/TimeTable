@@ -102,7 +102,7 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
                 workload = int(dlg.workload_lineEdit.text())
             except ValueError:
                 workload = None
-            teacher.update_teacher_data(family, name, workload, abb)
+            teacher.update_data(family, name, workload, abb)
             self.update_row(self.tableWidget, teacher, position)
         return
 

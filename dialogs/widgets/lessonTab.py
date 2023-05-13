@@ -102,8 +102,8 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             old_class = deepcopy(lesson.student_class)
 
             lesson.update_lesson_data(subject, teachers, student_class, amount, duration)
-            self.school.update_lesson_by_old(lesson, old_subject, old_class, old_teachers,
-                                             old_amount, old_duration)
+            self.school.validate_lesson_by_old(lesson, old_subject, old_class, old_teachers,
+                                               old_amount, old_duration)
 
             self.update_row(self.tableWidget, lesson, position)
         return

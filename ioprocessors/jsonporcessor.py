@@ -7,6 +7,10 @@ class JSONProcessor:
 
     @staticmethod
     def json_read(root: str) -> School:
+        """
+        Метод считывает файл и преобразует его в объект класса School.
+        :param root: Путь к файл.
+        """
         try:
             f = open(root, 'r', encoding='utf8')
         except FileExistsError:
@@ -17,10 +21,11 @@ class JSONProcessor:
                 school = JSONProcessor._json_parse(import_data)
                 return school
 
-
-
     @staticmethod
     def _json_parse(import_data: dict) -> School:
+        """
+        Метод считывает загруженный файл в виде dict и возвращает созданный объект School.
+        """
         name = import_data['name']
         amount_days = import_data['amount_days']
         amount_lessons = import_data['amount_lessons']
@@ -81,6 +86,12 @@ class JSONProcessor:
         return school
 
     @staticmethod
-    def json_save(root: str, school: School):
+    def json_save(root: str, school: School) -> None:
+        """
+        Метод сохраняет файл.
+        :param root: Путь к файлу.
+        :param school: Объект класса School для сохранения.
+        """
         with open(root, 'w', encoding='utf8') as f:
             json.dump(school.toJSON(), f, ensure_ascii=False, indent=4)
+        return

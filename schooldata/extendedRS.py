@@ -87,7 +87,7 @@ class ExtendedRecursiveSwapping:
             (day, lesson_position) = self.find_min(conflicts, unallocated_lesson)
             if day == -1 or lesson_position == -1:
                 print('Day and Lesson position is -1')
-                print(f'Нераспределенный урок: {unallocated_lesson.get_string()}')
+                print(f'Нераспределенный урок: {unallocated_lesson.get_full_name()}')
                 break
 
             if step == 0:
@@ -138,7 +138,7 @@ class ExtendedRecursiveSwapping:
             popped_lessons.append(self.throw_same_lesson(school, lesson, day))
 
         if not self.try_insert_lesson(school, lesson, day, les_pos):
-            print(f'not insert but should {lesson.get_string()}')
+            print(f'not insert but should {lesson.get_full_name()}')
 
         for lesson in popped_lessons:
             try_append, copy_school = self.try_to_place(school, lesson, step)

@@ -27,7 +27,7 @@ class EmptyMenuLabelAction(QtWidgets.QWidgetAction):
         widget = QtWidgets.QWidget()
 
         v_layout = QtWidgets.QVBoxLayout()
-        label = QtWidgets.QLabel(student_class.get_string())
+        label = QtWidgets.QLabel(student_class.get_full_name())
         v_layout.addWidget(label)
 
         widget.setLayout(v_layout)
@@ -81,7 +81,7 @@ class TimeTableItem(QtWidgets.QTableWidgetItem):
         self.set_tooltip_info()
         self.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
-    def set_tooltip_info(self):
+    def set_tooltip_info(self) -> None:
         teachers_name = ''
         for teacher in self.lesson.teacher:
             teachers_name = teachers_name + f'{str(teacher.abbreviation or "")} - '\
@@ -91,7 +91,7 @@ class TimeTableItem(QtWidgets.QTableWidgetItem):
         self.setToolTip(tooltip)
         return
 
-    def update(self):
+    def update(self) -> None:
         self.setText(self.lesson.subject.abbreviation)
         return
 
@@ -108,7 +108,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.setAcceptDrops(True)
 
-    def create_table(self, days_amount: int = 5, lessons_amount: int = 8):
+    def create_table(self, days_amount: int = 5, lessons_amount: int = 8) -> None:
         self.setRowCount(0)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
@@ -122,6 +122,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
         font = QtGui.QFont()
         font.setPointSize(7)
         self.horizontalHeader().setFont(font)
+        return
 
     def setItem(self, row: int, column: int, item: QtWidgets.QTableWidgetItem) -> None:
         row = row
@@ -134,7 +135,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
         self.setSpan(row, column, 1, 1)
         return super(MyTableWidget, self).takeItem(row, column)
 
-    def fill_table(self, school: School):
+    def fill_table(self, school: School) -> None:
         self.setRowCount(0)
         self.setRowCount(len(school.student_classes))
 
@@ -152,16 +153,18 @@ class MyTableWidget(QtWidgets.QTableWidget):
                     if lesson.get_start_end_lesson(day, les_pos)['start'] != les_pos:
                         continue
                 self.setItem(lesson.student_class.id, j, TimeTableItem(lesson))
+        return
 
-    def set_color(self, on: bool):
+    def set_color(self, on: bool) -> None:
         item = self.verticalHeaderItem(self.last_selected_row)
         if on:
             item.setBackground(QtGui.QColor(0, 204, 0))
         else:
             item.setBackground(QtGui.QColor(255, 255, 255))
         self.setVerticalHeaderItem(self.last_selected_row, item)
+        return
 
-    def mark_conflicts(self, amount_lessons):
+    def mark_conflicts(self, amount_lessons) -> None:
         for i in range(self.columnCount()):
             item = self.horizontalHeaderItem(i)
             day, les_pos = utils.column_to_days_lessons(i, amount_lessons)
@@ -173,11 +176,12 @@ class MyTableWidget(QtWidgets.QTableWidget):
             self.setHorizontalHeaderItem(i, item)
         return
 
-    def reset_conflicts(self):
+    def reset_conflicts(self) -> None:
         for i in range(self.columnCount()):
             item = self.horizontalHeaderItem(i)
             item.setBackground(QtGui.QColor(255, 255, 255))
             self.setHorizontalHeaderItem(i, item)
+        return
 
     def dragLeaveEvent(self, e: QtGui.QDragLeaveEvent) -> None:
         self.reset_conflicts()
@@ -189,6 +193,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
                     self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
 
         super(MyTableWidget, self).dragLeaveEvent(e)
+        return
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
         self.mark_conflicts(self.mainapp.school.amount_lessons)
@@ -201,6 +206,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
                     self.setSpan(index.row(), index.column(), 1, 1)
 
         super(MyTableWidget, self).dragEnterEvent(e)
+        return
 
     def startDrag(self, supportedActions: QtCore.Qt.DropAction) -> None:
         from_index = self.selectedIndexes()[0]
@@ -213,7 +219,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         self.last_selected_row = from_item.lesson.student_class.id
 
-        self.swapping_available, self.conflicts = school.append_pos(from_item.lesson, from_day)
+        self.swapping_available, self.conflicts = school.get_lesson_conflicts(from_item.lesson, from_day)
         self.mark_conflicts(school.amount_lessons)
 
         super(MyTableWidget, self).startDrag(supportedActions)
@@ -268,26 +274,13 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         newItem = None
         if is_swapping_available:
-            # Нормальные условия
-            to_items = []
             for d in range(from_item.lesson.duration):
-                to_items.append(self.item(to_index.row(), to_index.column() + d))
-
-            to_lessons = []
-            for i in range(len(to_items)):
-                to_lesson = None
-                if to_items[i] is not None:
-                    if to_items[i] == from_item:
-                        to_lessons.append(None)
-                        continue
-
-                    to_item = self.takeItem(to_index.row(), to_index.column() + i)
-                    to_lesson = to_item.lesson
-                to_lessons.append(to_lesson)
-
-            for i in range(len(to_lessons)):
-                if to_lessons[i] is not None:
-                    self._throw_lesson(school, to_lessons[i], to_day, to_les_pos + i)
+                to_item = self.item(to_index.row(), to_index.column() + d)
+                if to_item is not None:
+                    if to_item != from_item:
+                        to_item = self.takeItem(to_index.row(), to_index.column() + d)
+                        to_lesson = to_item.lesson
+                        self._throw_lesson(school, to_lesson, to_day, to_les_pos + d)
 
             if sender != self:
                 from_item = self.unallocated_list.takeItem(from_index.row())
@@ -309,18 +302,27 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
     @staticmethod
     def _append_lesson(school: School, append_lesson: Lesson, day: int, les_pos: int):
+        """
+        Метод помещения урока в timetable.
+        """
         for d in range(append_lesson.duration):
             school.timetable[day][les_pos + d].append(append_lesson)
         append_lesson.set_unavailable(day, les_pos)
         return
 
     def _throw_lesson(self, school: School, throw_lesson: Lesson, day: int, les_pos: int):
+        """
+        Метод удаления урока из timetable и помещения его в список нераспределенных уроков.
+        """
         self.unallocated_list.add_unallocated_lesson(throw_lesson)
         school.remove_duration(throw_lesson, day, les_pos)
         throw_lesson.set_available(day, les_pos)
         return
 
     def _throw_conflicts(self, school: School, day: int, les_pos: int):
+        """
+        Метод удаления конфликтов из таблицы.
+        """
         self.conflicts[day][les_pos].sort(key=lambda x: x['position'], reverse=True)
         del_conf = list({v['lesson']: v for v in self.conflicts[day][les_pos]}.values())
         for conflict in del_conf:
@@ -336,12 +338,24 @@ class MyTableWidget(QtWidgets.QTableWidget):
         return
 
     def _replace(self, school: School, from_lesson: Lesson, from_day, from_les_pos, to_day, to_les_pos):
+        """
+        Метод удаляет lesson из одной позиции timetable и ставит его в другую позицию.
+        :param school: объект класса School с timetable.
+        :param from_lesson: lesson, который необходимо переставить.
+        :param from_day: День, из которого необходимо переставить lesson.
+        :param from_les_pos: Позиция в дне, из которой необходимо переставить lesson.
+        :param to_day: День, в который необходимо переставить lesson.
+        :param to_les_pos: Позиция в дне, в которую необходимо переставить lesson.
+        """
         school.remove_duration(from_lesson, from_day, from_les_pos)
         from_lesson.set_available(from_day, from_les_pos)
         self._append_lesson(school, from_lesson, to_day, to_les_pos)
         return
 
     def dropContextMenu(self, globPoint: QPoint, position: (int, int)) -> int:
+        """
+        Метод выводит меню при успешном действии drop.
+        """
         menu = QtWidgets.QMenu()
         menu.setWindowTitle('Несоответствия')
 
@@ -360,14 +374,20 @@ class MyTableWidget(QtWidgets.QTableWidget):
             return 1
         elif action == place_action:
             return 2
+        else:
+            return -1
 
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
+        """
+        Метод выводит пользователю меню в зависимости от параметров ячейки.
+        """
         menu = QtWidgets.QMenu()
 
         point = QPoint(int(a0.pos().x()), int(a0.pos().y()))
         to_index = self.indexAt(point)
         cell = self.itemAt(a0.pos())
 
+        # Вызывается метод emptyCellMenu, если ячейка пустая, либо bookedCellMenu, если ячейка заполнена
         if cell is not None:
             if not self.bookedCellMenu(menu, to_index, a0, cell):
                 return
@@ -396,7 +416,6 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
     def emptyCellMenu(self, menu: QtWidgets.QMenu, to_index: QtCore.QModelIndex,
                       a0: QtGui.QContextMenuEvent) -> bool:
-
         day, les_pos = utils.column_to_days_lessons(to_index.column(), self.mainapp.school.amount_lessons)
         av_items = self.unallocated_list.get_available_items(to_index.row(), day, les_pos)
         if len(av_items) == 0:

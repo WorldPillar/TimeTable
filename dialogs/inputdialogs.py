@@ -25,7 +25,7 @@ class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
             self.name_lineEdit.setText(subject.name)
             self.abb_lineEdit.setText(subject.abbreviation)
 
-    def abb_constructor(self):
+    def abb_constructor(self) -> None:
         words = list(filter(None, self.name_lineEdit.text().split(' ')))
 
         abb = ''
@@ -62,7 +62,7 @@ class ClassDialog(QDialog, classWindow.Ui_dialogClass):
             self.name_lineEdit.setText(student_class.name)
             self.abb_lineEdit.setText(student_class.abbreviation)
 
-    def abb_constructor(self):
+    def abb_constructor(self) -> None:
         words = list(filter(None, self.name_lineEdit.text().split(' ')))
 
         abb = ''
@@ -102,7 +102,7 @@ class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
             self.abb_lineEdit.setText(teacher.abbreviation)
             self.workload_lineEdit.setText(str(teacher.workload or ''))
 
-    def abb_constructor(self):
+    def abb_constructor(self) -> None:
         family = self.family_lineEdit.text()
         name = self.name_lineEdit.text()
 
@@ -159,30 +159,31 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
             self.gridLayout_2.itemAtPosition(3, 1).widget().hide()
         return buttonAdd
 
-    def addCombobox(self):
+    def addCombobox(self) -> None:
         self.putCombobox(-1)
         return
 
-    def putCombobox(self, teacherId: int = -1):
+    def putCombobox(self, teacherId: int = -1) -> None:
         self.secondTeacherCombobox = QComboBox()
-        self.secondTeacherCombobox.addItems([x.get_string() for x in self.school.teachers])
+        self.secondTeacherCombobox.addItems([x.get_full_name() for x in self.school.teachers])
         self.secondTeacherCombobox.setCurrentIndex(teacherId)
         self.gridLayout_2.itemAtPosition(3, 1).widget().show()
 
         self.gridLayout_2.addWidget(self.secondTeacherCombobox, 2, 1)
         return
 
-    def fill_combobox(self):
-        self.teacher_combobox.addItems([x.get_string() for x in self.school.teachers])
+    def fill_combobox(self) -> None:
+        self.teacher_combobox.addItems([x.get_full_name() for x in self.school.teachers])
         self.teacher_combobox.setCurrentIndex(-1)
-        self.class_combobox.addItems([x.get_string() for x in self.school.student_classes])
+        self.class_combobox.addItems([x.get_full_name() for x in self.school.student_classes])
         self.class_combobox.setCurrentIndex(-1)
-        self.subject_combobox.addItems([x.get_string() for x in self.school.subjects])
+        self.subject_combobox.addItems([x.get_full_name() for x in self.school.subjects])
         self.subject_combobox.setCurrentIndex(-1)
         self.count_combobox.addItems(SchoolData.get_max_lesson_in_week(self.school.amount_days))
         self.count_combobox.setCurrentIndex(-1)
         self.duration_combobox.addItems(['1', '2'])
         self.duration_combobox.setCurrentIndex(-1)
+        return
 
     def accept(self) -> None:
         if (self.teacher_combobox.currentIndex() == -1) or (self.class_combobox.currentIndex() == -1) or \
@@ -194,6 +195,7 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
             if self.secondTeacherCombobox.currentIndex() == -1:
                 return
         super().accept()
+        return
 
 
 class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
@@ -204,7 +206,7 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
         self.tableWidget.itemClicked.connect(self.item_clicked)
         self.set_tables()
 
-    def set_tables(self):
+    def set_tables(self) -> None:
         self.tableWidget.setColumnCount(len(self.item.worktime[0]))
         self.tableWidget.setRowCount(len(self.item.worktime))
 
@@ -227,7 +229,7 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
                 self.tableWidget.setItem(day, les_pos, WorkTimeItem(self.item.worktime[day][les_pos]))
         return
 
-    def item_clicked(self):
+    def item_clicked(self) -> None:
         (row, col) = (self.tableWidget.selectedItems()[0].row(), self.tableWidget.selectedItems()[0].column())
         self.tableWidget.item(row, col).reverse()
 
@@ -238,12 +240,14 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
             color = QtGui.QColor(204, 0, 0)
         palette.setBrush(QtGui.QPalette.ColorRole.Highlight, QtGui.QBrush(color))
         self.tableWidget.setPalette(palette)
+        return
 
     def accept(self) -> None:
         for i in range(self.tableWidget.rowCount()):
             for j in range(self.tableWidget.columnCount()):
                 self.item.worktime[i][j] = self.tableWidget.item(i, j).is_available
         super().accept()
+        return
 
 
 class WorkTimeItem(QTableWidgetItem):
@@ -252,13 +256,21 @@ class WorkTimeItem(QTableWidgetItem):
         self.is_available = available
         self._draw()
 
-    def reverse(self):
+    def reverse(self) -> None:
+        """
+        Метод инвертирует значение self.is_available
+        """
         self.is_available -= 1
         self.is_available *= -1
         self._draw()
+        return
 
-    def _draw(self):
+    def _draw(self) -> None:
+        """
+        Метод меняет цвет по значению self.is_available
+        """
         if self.is_available == 1:
             self.setBackground(QtGui.QColor(0, 204, 0))
         else:
             self.setBackground(QtGui.QColor(204, 0, 0))
+        return
