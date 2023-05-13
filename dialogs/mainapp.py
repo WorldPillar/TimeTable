@@ -6,14 +6,14 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
 from dialogs.listdialog import ListDialog
+from windows import mainWindow, schoolWindow
+from dialogs.widgets.listWidget import MyListWidget
 from ioprocessors.excelprocessor import ExcelProcessor
 from ioprocessors.jsonporcessor import JSONProcessor
 from schooldata.data import SchoolData
 from schooldata.extendedRS import ExtendedRecursiveSwapping
 from schooldata.school import School
 from schooldata.validateData import Validator
-from windows import mainWindow, schoolWindow
-from dialogs.widgets.listWidget import MyListWidget
 
 desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
 
@@ -44,7 +44,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.verticalLayout_2.addWidget(self.unallocated_list)
         self.tableWidget_timetable.unallocated_list = self.unallocated_list
 
-    def create_table(self, days_amount: int = 5, lessons_amount: int = 6):
+    def create_table(self, days_amount: int = 5, lessons_amount: int = 6) -> None:
         """
         Вызов функций для создания заголовков таблиц. Вызывать функцию только при обновлении параметров школы.
         :param days_amount: количество учебных дней в неделю.
@@ -56,7 +56,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.tableWidget_timetable.create_table(days_amount, lessons_amount)
         return
 
-    def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 6):
+    def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 6) -> None:
         self.tableWidget_days.setRowCount(0)
         self.tableWidget_days.setFixedHeight(15)
         self.tableWidget_days.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -77,21 +77,30 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.tableWidget_days.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
         return
 
-    def set_save_actions(self):
+    def set_save_actions(self) -> None:
+        """
+        Метод добавляет действия для кнопки "Сохранить".
+        """
         menu = QtWidgets.QMenu()
         menu.addAction(QIcon('icons/savefileicon.svg'), 'Сохранить', self.save_file)
         menu.addAction(QIcon('icons/saveasfileicon.svg'), 'Сохранить как', self.save_as_file)
         self.tbtn_save.setMenu(menu)
         return
 
-    def set_export_actions(self):
+    def set_export_actions(self) -> None:
+        """
+        Метод добавляет действия для кнопки "Экспорт".
+        """
         menu = QtWidgets.QMenu()
         menu.addAction(QIcon('icons/classicon.svg'), 'Экспорт расписания классов', self.export_class_table)
         menu.addAction(QIcon('icons/teachericon.svg'), 'Экспорт расписания учителей', self.export_teacher_table)
         self.tbtn_export.setMenu(menu)
         return
 
-    def new_file(self):
+    def new_file(self) -> None:
+        """
+        Метод создания нового файла. Создаётся объект класса School.
+        """
         dlg = SchoolDialog(self)
         if dlg.exec():
             name = dlg.name_lineEdit.text()
@@ -108,7 +117,10 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.file_path = ''
         return
 
-    def open_file(self):
+    def open_file(self) -> None:
+        """
+        Метод открытия файла.
+        """
         (file_name, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Открыть", desktop, "*.sked")
         if file_name != '':
             try:
@@ -126,7 +138,10 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.file_path = file_name
         return
 
-    def save_file(self):
+    def save_file(self) -> None:
+        """
+        Метод сохранения файла с известным путём.
+        """
         if self.file_path == '':
             self.save_as_file()
         else:
@@ -139,7 +154,10 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
                 errorbox.exec()
         return
 
-    def save_as_file(self):
+    def save_as_file(self) -> None:
+        """
+        Метод сохранения файла без известного пути.
+        """
         rout = desktop
         if self.file_path != '':
             rout = self.file_path
@@ -157,15 +175,19 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.file_path = file_name
         return
 
-    def export_class_table(self):
+    def export_class_table(self) -> None:
         self.export_table('class')
         return
 
-    def export_teacher_table(self):
+    def export_teacher_table(self) -> None:
         self.export_table('teacher')
         return
 
-    def export_table(self, param):
+    def export_table(self, param: str) -> None:
+        """
+        Метод экспортирования таблицы расписания в excel.
+        :param param: Экспорт расписания учителей при значении 'teacher'. Экспорт расписания классов при 'class'.
+        """
         rout = desktop
         if self.table_file_path != '':
             rout = self.table_file_path
@@ -184,7 +206,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.table_file_path = file_name
         return
 
-    def input_lists_window(self, value: int):
+    def input_lists_window(self, value: int) -> None:
+        """
+        Метод открывает диалоговое окно заполнения список школы.
+        :param value: Начальная вкладка при открытии окна.
+        """
         dlg = ListDialog(self, self.school)
         dlg.tabWidget.setCurrentIndex(value)
         dlg.exec()
@@ -192,9 +218,9 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
         return
 
-    def scheduling(self):
+    def scheduling(self) -> None:
         """
-        Функция вызова алгоритма составления расписания. После составления вызывает метод заполнения таблицы.
+        Метод вызова алгоритма составления расписания. После составления вызывает метод заполнения таблицы.
         """
         conflicts = Validator.validate(self.school)
         if len(conflicts) != 0:
@@ -222,7 +248,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
             msg.exec()
         return
 
-    def set_buttons_available(self):
+    def set_buttons_available(self) -> None:
         self.tbtn_save.setDisabled(False)
         self.tbtn_export.setDisabled(False)
         self.tbtn_subject.setDisabled(False)

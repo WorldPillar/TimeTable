@@ -32,7 +32,10 @@ class ListDialog(QDialog, listsWindow.Ui_dialogLists):
 
         self.tabWidget.currentChanged.connect(self.update_table)
 
-    def update_table(self):
+    def update_table(self) -> None:
+        """
+        Метод вызывается после смены вкладки диалогового окна. В зависимости от активной вкладки, обновляет её таблицу.
+        """
         index = self.tabWidget.currentIndex()
         match index:
             case 0:

@@ -4,6 +4,9 @@ from schooldata.school import School, Teacher, StudentClass
 class Validator:
     @staticmethod
     def _worktime_counter(worktime: list[list[int]]) -> int:
+        """
+        Метод подсчёта свободного времени по рабочему времени.
+        """
         count = 0
         for day in worktime:
             for les_pos in day:
@@ -12,6 +15,12 @@ class Validator:
 
     @staticmethod
     def _create_comment(obj, worktime: int) -> str:
+        """
+        Метод создания комментария
+        :param obj: объект класса StudentClass или Teacher.
+        :param worktime: Свободное время объекта.
+        :return: Комментарий.
+        """
         type_obj = type(obj)
         if type_obj == StudentClass:
             name = 'класса'
@@ -26,6 +35,11 @@ class Validator:
 
     @staticmethod
     def validate(school: School) -> list[str]:
+        """
+        Метод валидации данных учителей и классов.
+        :param school:
+        :return: Список комментариев с ошибками.
+        """
         conflicts = []
         for teacher in school.teachers:
             workload = teacher.workload

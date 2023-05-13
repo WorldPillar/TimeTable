@@ -91,7 +91,7 @@ class ClassTab(QtWidgets.QTabWidget, tab.Ui_Form):
         if dlg.exec():
             name = dlg.name_lineEdit.text()
             abb = dlg.abb_lineEdit.text()
-            student_class.update_class_data(name, abb)
+            student_class.update_data(name, abb)
             self.update_row(self.tableWidget, student_class, position)
         return
 

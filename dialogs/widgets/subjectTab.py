@@ -91,7 +91,7 @@ class SubjectTab(QtWidgets.QTabWidget, tab.Ui_Form):
         if dlg.exec():
             name = dlg.name_lineEdit.text()
             abb = dlg.abb_lineEdit.text()
-            subject.update_subject_data(name, abb)
+            subject.update_data(name, abb)
             self.update_row(self.tableWidget, subject, position)
         return
 

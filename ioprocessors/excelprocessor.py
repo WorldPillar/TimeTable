@@ -3,7 +3,7 @@ from openpyxl.styles import Alignment, Font
 
 import utils
 from schooldata.data import SchoolData
-from schooldata.school import School, Subject, Teacher, StudentClass, Lesson
+from schooldata.school import School, Lesson
 
 
 def _get_len(school: School, param: str) -> int:
@@ -33,7 +33,7 @@ def _get_name(school: School, pos: int, param: str) -> str:
         return school.teachers[pos].get_name()
 
 
-def _get_id(lesson: Lesson, param: str) -> int:
+def _get_id(lesson: Lesson, param: str) -> [int]:
     """
     Возвращает id объекта student_class при param 'class'
      или id объекта teacher при param 'teacher' у объекта lesson
@@ -41,61 +41,12 @@ def _get_id(lesson: Lesson, param: str) -> int:
     :param param: 'class' или 'teacher'
     """
     if param == 'class':
-        return lesson.student_class.id
+        return [lesson.student_class.id]
     else:
-        return lesson.teacher.id
+        return [teacher.id for teacher in lesson.teacher]
 
 
 class ExcelProcessor:
-    @staticmethod
-    def _load_data(file_name: str) -> School:
-        """
-        Тестовый метод для загрузки данных.
-        :return: Объект класса School
-        """
-        book = openpyxl.load_workbook(file_name)
-        school_sheet = book['School']
-        school_name = school_sheet[2][0].value
-        school_days = int(school_sheet[2][1].value)
-        school_lessons = int(school_sheet[2][2].value)
-        school = School(school_name, school_days, school_lessons)
-
-        subject_sheet = book['Subjects']
-        for i in range(2, subject_sheet.max_row + 1):
-            name = subject_sheet[i][1].value
-            abb = subject_sheet[i][2].value
-            subject = Subject(name, abb)
-            school.subjects.append(subject)
-
-        student_sheet = book['StudentClasses']
-        for i in range(2, student_sheet.max_row + 1):
-            name = student_sheet[i][1].value
-            abb = student_sheet[i][2].value
-            student_class = StudentClass(name, abb)
-            school.student_classes.append(student_class)
-
-        teacher_sheet = book['Teachers']
-        for i in range(2, teacher_sheet.max_row + 1):
-            family = teacher_sheet[i][1].value
-            name = teacher_sheet[i][2].value
-            abb = teacher_sheet[i][3].value
-            workload = teacher_sheet[i][4].value
-            if workload is not None:
-                workload = int(workload)
-            teacher = Teacher(family, name, workload, abb)
-            school.teachers.append(teacher)
-
-        lesson_sheet = book['Lessons']
-        for i in range(2, lesson_sheet.max_row + 1):
-            subject = school.subjects[int(lesson_sheet[i][1].value) - 1]
-            student_class = school.student_classes[int(lesson_sheet[i][2].value) - 1]
-            teacher = school.teachers[int(lesson_sheet[i][3].value) - 1]
-            amount = int(lesson_sheet[i][4].value)
-            lesson = Lesson(subject, teacher, student_class, amount)
-            school.lessons.append(lesson)
-
-        return school
-
     @staticmethod
     def export_table(school: School, param: str, rout: str) -> bool:
         """
@@ -130,12 +81,13 @@ class ExcelProcessor:
             for j in range(school.amount_lessons * school.amount_days):
                 day, les_pos = utils.column_to_days_lessons(j, school.amount_lessons)
                 for les in school.timetable[day][les_pos]:
-                    lesson_cell = ws.cell(j + 2, _get_id(les, param) + 3)
-                    lesson_cell.alignment = Alignment(horizontal='center', vertical='center')
+                    ids = _get_id(les, param)
+                    for one_id in ids:
+                        lesson_cell = ws.cell(j + 2, one_id + 3)
+                        lesson_cell.alignment = Alignment(horizontal='center', vertical='center')
 
-                    output = les.student_class.name if param == 'teacher' else les.subject.abbreviation
-                    lesson_cell.value = output
-
+                        output = les.student_class.name if param == 'teacher' else les.subject.abbreviation
+                        lesson_cell.value = output
         try:
             wb.save(rout)
             wb.close()

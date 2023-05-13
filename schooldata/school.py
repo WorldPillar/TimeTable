@@ -17,20 +17,21 @@ class Teacher:
 
         self.lessons_count: int = 0
 
-    def get_name(self):
+    def get_name(self) -> str:
         name = f'{str(self.family or "")} {str(self.name or "")}'
         return name
 
-    def get_string(self):
+    def get_full_name(self) -> str:
         string = f'{str(self.family or "")} {str(self.name or "")} ({str(self.abbreviation or "")})'
         return string
 
-    def get_attributes(self):
+    def get_attributes(self) -> list:
         items = [f'{str(self.family or "")} {str(self.name or "")}',
                  self.abbreviation, self.lessons_count, self.workload]
         return items
 
-    def update_teacher_data(self, family: str = '', name: str = '', workload: int = None, abbreviation: str = ''):
+    def update_data(self, family: str = '', name: str = '',
+                    workload: int = None, abbreviation: str = '') -> None:
         self.family = family
         self.name = name
         self.workload = workload
@@ -50,19 +51,19 @@ class StudentClass:
 
         self.lessons_count: int = 0
 
-    def get_name(self):
+    def get_name(self) -> str:
         name = f'{self.name}'
         return name
 
-    def get_string(self):
+    def get_full_name(self) -> str:
         string = f'{str(self.name or "")} ({str(self.abbreviation or "")})'
         return string
 
-    def get_attributes(self):
+    def get_attributes(self) -> list:
         items = [self.name, self.abbreviation, self.lessons_count]
         return items
 
-    def update_class_data(self, name: str = '', abbreviation: str = ''):
+    def update_data(self, name: str = '', abbreviation: str = '') -> None:
         self.name = name
         self.abbreviation = abbreviation
         return
@@ -84,15 +85,15 @@ class Subject:
         name = f'{self.name}'
         return name
 
-    def get_string(self) -> str:
+    def get_full_name(self) -> str:
         string = f'{str(self.name or "")} ({str(self.abbreviation or "")})'
         return string
 
-    def get_attributes(self):
+    def get_attributes(self) -> list:
         items = [self.name, self.abbreviation, self.lessons_count]
         return items
 
-    def update_subject_data(self, name: str = '', abbreviation: str = ''):
+    def update_data(self, name: str = '', abbreviation: str = '') -> None:
         self.name = name
         self.abbreviation = abbreviation
         return
@@ -101,105 +102,168 @@ class Subject:
 class Lesson:
     id_obj = itertools.count()
 
-    def __init__(self, subject: Subject, teacher: Teacher, student_class: StudentClass, amount: int):
+    def __init__(self, subject: Subject, teacher: Teacher, student_class: StudentClass, amount: int, duration: int = 1):
         self.id = next(Lesson.id_obj)
         self.subject: Subject = subject
-        self.teacher: Teacher = teacher
+        self.teacher: list[Teacher] = [teacher]
         self.student_class: StudentClass = student_class
         self.amount: int = amount
         self.current_worktime = deepcopy(WorkTime.worktime)
+        self.duration: int = duration
+        self.start_end_positions: list[dict] = []
         self._add_lesson_to_objects()
 
-    def _add_lesson_to_objects(self):
-        self.subject.lessons_count += self.amount
-        self.teacher.lessons_count += self.amount
-        self.student_class.lessons_count += self.amount
+    def _add_lesson_to_objects(self) -> None:
+        self.subject.lessons_count += self.amount * self.duration
+        for teacher in self.teacher:
+            teacher.lessons_count += self.amount * self.duration
+        self.student_class.lessons_count += self.amount * self.duration
         return
 
-    def delete_lesson(self):
-        self.subject.lessons_count -= self.amount
-        self.teacher.lessons_count -= self.amount
-        self.student_class.lessons_count -= self.amount
+    def delete_lesson(self) -> None:
+        """
+        Метод уменьшает количество уроков у каждого объекта, который содержится в данном lesson.
+        """
+        self.subject.lessons_count -= self.amount * self.duration
+        for teacher in self.teacher:
+            teacher.lessons_count -= self.amount * self.duration
+        self.student_class.lessons_count -= self.amount * self.duration
         return
 
-    def update_lesson_data(self, subject: Subject = None, teacher: Teacher = None,
-                           student_class: StudentClass = None, amount: int = -1):
+    def update_lesson_data(self, subject: Subject = None, teachers: list[Teacher] = None,
+                           student_class: StudentClass = None, amount: int = -1, duration: int = None) -> None:
         if subject is not None:
-            self.subject.lessons_count -= self.amount
+            self.subject.lessons_count -= self.amount * self.duration
             self.subject = subject
-            self.subject.lessons_count += self.amount
-        if teacher is not None:
-            self.teacher.lessons_count -= self.amount
-            self.teacher = teacher
-            self.teacher.lessons_count += self.amount
+            self.subject.lessons_count += self.amount * self.duration
+        if teachers is not None:
+            for teach in self.teacher:
+                teach.lessons_count -= self.amount * self.duration
+            self.teacher.clear()
+            for teach in teachers:
+                teach.lessons_count += self.amount * self.duration
+                self.teacher.append(teach)
         if student_class is not None:
-            self.student_class.lessons_count -= self.amount
+            self.student_class.lessons_count -= self.amount * self.duration
             self.student_class = student_class
-            self.student_class.lessons_count += self.amount
+            self.student_class.lessons_count += self.amount * self.duration
+        if duration is not None:
+            self.duration = duration
         if amount != -1:
             self.delete_lesson()
             self.amount = amount
             self._add_lesson_to_objects()
         return
 
-    def is_available(self, day, lesson):
-        s = self.subject.worktime[day][lesson]
-        t = self.teacher.worktime[day][lesson]
-        c = self.student_class.worktime[day][lesson]
-        if s * t * c == 0:
+    def is_available(self, day, lesson) -> bool:
+        """
+        Метод возвращает значение bool, доступен ли урок по ограничениям или нет.
+        :param day: День, в который проверяется доступность.
+        :param lesson: Позиция урока, в который проверяется доступность.
+        :return: Доступен или не доступен.
+        """
+        if lesson + self.duration - 1 >= len(self.current_worktime[day]):
             return False
+        for i in range(lesson, lesson + self.duration):
+            s = self.subject.worktime[day][i]
+            t = 1
+            for teacher in self.teacher:
+                t *= teacher.worktime[day][i]
+            c = self.student_class.worktime[day][i]
+            if s * t * c == 0:
+                return False
         return True
 
-    def current_available(self, day, lesson):
-        t = self.teacher_current_available(day, lesson)
-        c = self.student_class_current_available(day, lesson)
-        les = self.is_available_today(day)
-        return les and t and c
+    def current_available(self, day, lesson) -> bool:
+        """
+        Метод возвращает значение bool, доступен ли урок в данном расписании.
+        :param day: День, в который проверяется доступность.
+        :param lesson: Позиция урока, в который проверяется доступность.
+        :return: Доступен или не доступен.
+        """
+        cur_av = True
+        for i in range(lesson, lesson + self.duration):
+            t = self._teacher_current_available(day, i)
+            c = self._student_class_current_available(day, i)
+            les = self.is_available_today(day)
+            cur_av = cur_av and les and t and c
+        return cur_av
 
-    def teacher_current_available(self, day, lesson):
-        if self.teacher.current_worktime[day][lesson] == 0:
-            return False
+    def _teacher_current_available(self, day, lesson) -> bool:
+        for teacher in self.teacher:
+            if teacher.current_worktime[day][lesson] == 0:
+                return False
         return True
 
-    def student_class_current_available(self, day, lesson):
+    def _student_class_current_available(self, day, lesson) -> bool:
         if self.student_class.current_worktime[day][lesson] == 0:
             return False
         return True
 
-    def is_available_today(self, day):
+    def is_available_today(self, day) -> bool:
         for lesson in self.current_worktime[day]:
             if lesson == 0:
                 return False
         return True
 
-    def set_unavailable(self, day, lesson):
-        self.teacher.current_worktime[day][lesson] = 0
-        self.student_class.current_worktime[day][lesson] = 0
-        self.current_worktime[day][lesson] = 0
+    def set_unavailable(self, day, lesson) -> None:
+        self.start_end_positions.append({'day': day, 'start': lesson, 'end': lesson + self.duration - 1})
+        for i in range(lesson, lesson + self.duration):
+            for teacher in self.teacher:
+                teacher.current_worktime[day][i] = 0
+            self.student_class.current_worktime[day][i] = 0
+            self.current_worktime[day][i] = 0
         return
 
-    def set_available(self, day, lesson):
-        self.teacher.current_worktime[day][lesson] = 1
-        self.student_class.current_worktime[day][lesson] = 1
-        self.current_worktime[day][lesson] = 1
+    def set_available(self, day, lesson) -> None:
+        start_end = self.get_start_end_lesson(day, lesson)
+        for i in range(start_end['start'], start_end['end'] + 1):
+            for teacher in self.teacher:
+                teacher.current_worktime[day][i] = 1
+            self.student_class.current_worktime[day][i] = 1
+            self.current_worktime[day][i] = 1
+        self.start_end_positions.remove(start_end)
         return
 
-    def get_string(self):
-        string = f'{self.subject.get_string()} {self.teacher.get_string()}' \
-                 f' {self.student_class.get_string()} {self.amount}'
+    def get_start_end_lesson(self, day: int, start: int) -> dict:
+        """
+        Метод возвращает начало и конец урока по дню и позиции, в которой находится урок.
+        """
+        for lesson in self.start_end_positions:
+            if lesson['day'] == day and lesson['start'] <= start <= lesson['end']:
+                return lesson
+
+    def get_full_name(self) -> str:
+        teachers = f'{self.teacher[0].get_full_name()}'
+        for i in range(1, len(self.teacher)):
+            teachers = teachers + ', ' + self.teacher[i].get_full_name()
+        string = f'{self.subject.get_full_name()} {teachers}' \
+                 f' {self.student_class.get_full_name()} {self.amount} {self.duration}'
         return string
 
-    def get_attributes(self):
-        items = [self.subject.name, f'{str(self.teacher.family or "")} {str(self.teacher.name or "")}',
-                 self.student_class.name, str(self.amount)]
+    def get_attributes(self) -> list[str]:
+        teachers = f'{str(self.teacher[0].family or "")} {str(self.teacher[0].name or "")}'
+        for i in range(1, len(self.teacher)):
+            teachers = teachers + ', ' + f'{str(self.teacher[i].family or "")} {str(self.teacher[i].name or "")}'
+        items = [self.subject.name, teachers,
+                 self.student_class.name, str(self.amount), str(self.duration)]
         return items
 
-    def toJSON(self):
+    def toJSON(self) -> dict:
         lesson_tojson = {"id": self.id,
                          "subject": self.subject.id,
-                         "teacher": self.teacher.id,
+                         "teachers": [
+                             {"teacher": teacher.id} for teacher in self.teacher
+                         ],
                          "student_class": self.student_class.id,
                          "amount": self.amount,
+                         "duration": self.duration,
+                         "start_end_positions": [
+                             {"day": item['day'],
+                              "start": item['start'],
+                              "end": item['end']
+                              } for item in self.start_end_positions
+                         ],
                          "current_worktime": self.current_worktime
                          }
         return lesson_tojson
@@ -209,7 +273,7 @@ class WorkTime:
     worktime: list[list[int]] = []
 
     @staticmethod
-    def set_worktime(amount_days: int, amount_lessons: int):
+    def set_worktime(amount_days: int, amount_lessons: int) -> None:
         WorkTime.worktime = [[1 for _ in range(amount_lessons)] for _ in range(amount_days)]
         return
 
@@ -227,16 +291,24 @@ class School:
                                                      ] for _ in range(self.amount_days)]
         self.unallocated: list[Lesson] = []
         WorkTime.set_worktime(amount_days, amount_lessons)
-        self.reset_ids()
+        self._reset_ids()
 
-    def reset_ids(self):
+    @staticmethod
+    def _reset_ids() -> None:
+        """
+        Метод сбрасывает id у всех классов списков School.
+        """
         Subject.id_obj = itertools.count()
         Teacher.id_obj = itertools.count()
         StudentClass.id_obj = itertools.count()
         Lesson.id_obj = itertools.count()
         return
 
-    def drop_current_time(self):
+    def drop_current_time(self) -> None:
+        """
+        Метод сбрасывает текущее время у всех объектов из списков школы,
+        а также длительность у каждого lesson.
+        """
         for teacher in self.teachers:
             teacher.current_worktime = deepcopy(WorkTime.worktime)
         for subject in self.subjects:
@@ -245,9 +317,14 @@ class School:
             student_class.current_worktime = deepcopy(WorkTime.worktime)
         for lesson in self.lessons:
             lesson.current_worktime = deepcopy(WorkTime.worktime)
+            lesson.start_end_positions = []
         return
 
-    def pop_subject(self, position):
+    def pop_subject(self, position) -> None:
+        """
+        Метод удаляет subject из списка школы, а также все уроки, связанные с этим предметом.
+        :param position: Позиция объекта subject в списке.
+        """
         popped = self.subjects.pop(position)
 
         for i in range(position, len(self.subjects)):
@@ -264,7 +341,11 @@ class School:
                 i += 1
         return
 
-    def pop_class(self, position):
+    def pop_class(self, position) -> None:
+        """
+        Метод удаляет student_class из списка школы, а также все уроки, связанные с этим предметом.
+        :param position: Позиция объекта student_class в списке.
+        """
         popped = self.student_classes.pop(position)
 
         for i in range(position, len(self.student_classes)):
@@ -281,7 +362,11 @@ class School:
                 i += 1
         return
 
-    def pop_teacher(self, position):
+    def pop_teacher(self, position) -> None:
+        """
+        Метод удаляет teacher из списка школы, а также все уроки, связанные с этим предметом.
+        :param position: Позиция объекта teacher в списке.
+        """
         popped = self.teachers.pop(position)
 
         for i in range(position, len(self.teachers)):
@@ -298,7 +383,11 @@ class School:
                 i += 1
         return
 
-    def pop_lesson(self, position):
+    def pop_lesson(self, position) -> None:
+        """
+        Метод удаляет lesson из списка школы, а также все уроки, связанные с этим предметом.
+        :param position: Позиция объекта lesson в списке.
+        """
         self.lessons[position].delete_lesson()
         popped = self.lessons.pop(position)
 
@@ -313,14 +402,95 @@ class School:
         self.unallocated = [lesson for lesson in self.unallocated if lesson != popped]
         return
 
-    def update_lesson_amount(self, lesson: Lesson, old_amount):
+    def validate_lesson_by_old(self, lesson: Lesson, old_subject: Subject,
+                               old_student_class: StudentClass,
+                               old_teachers: list[Teacher], old_amount: int, old_duration: int) -> None:
+        """
+        Метод валидации lesson после обновления по старым значениям.
+        Удаляет или перемещает в нераспределенные уроки переданный объект.
+        :param lesson: Объекта класса Lesson, у которого обновились данные.
+        :param old_subject: Предыдущий объект класса Subject у lesson.
+        :param old_student_class: Предыдущий объект класса StudentClass у lesson.
+        :param old_teachers: Предыдущий объект класса Teacher у lesson.
+        :param old_amount: Предыдущий amount у lesson.
+        :param old_duration: Предыдущий duration у lesson.
+        """
+        not_changed = True
+        not_changed = not_changed and (lesson.subject.id == old_subject.id)
+        not_changed = not_changed and (lesson.student_class.id == old_student_class.id)
+        not_changed = not_changed and self._update_lesson_teachers(lesson, old_teachers)
+        if not not_changed:
+            self._remove_lesson_from_timetable(lesson)
+        self._update_lesson_duration(lesson, old_duration)
+        self.update_lesson_amount(lesson, old_amount)
+        return
+
+    @staticmethod
+    def _update_lesson_teachers(lesson: Lesson, old_teachers: list[Teacher]) -> bool:
+        if len(lesson.teacher) > len(old_teachers):
+            return False
+        else:
+            for teacher in lesson.teacher:
+                olds = False
+                for new_teacher in old_teachers:
+                    if teacher.id == new_teacher.id:
+                        olds = True
+                if not olds:
+                    return False
+        return True
+
+    def _append_into_unalloc_list(self, lesson) -> None:
+        for i in range(lesson.amount):
+            self.unallocated.append(lesson)
+        self.unallocated.sort(key=lambda x: x.id, reverse=False)
+
+    def _remove_lesson_from_timetable(self, lesson) -> None:
+        for day in self.timetable:
+            for les_pos in day:
+                for located_lesson in les_pos:
+                    if located_lesson == lesson:
+                        les_pos.remove(located_lesson)
+                        self._append_into_unalloc_list(lesson)
+        return
+
+    def _update_lesson_duration(self, lesson: Lesson, old_duration) -> None:
+        if lesson.duration == old_duration:
+            return
+        elif lesson.duration > old_duration:
+            for day in self.timetable:
+                for les_pos in day:
+                    for located_lesson in les_pos:
+                        if located_lesson == lesson:
+                            les_pos.remove(located_lesson)
+                            break
+            for i in range(lesson.amount):
+                self.unallocated.append(lesson)
+            self.unallocated.sort(key=lambda x: x.id, reverse=False)
+        else:
+            for day in self.timetable:
+                duration = lesson.duration
+                for les_pos in day:
+                    for located_lesson in les_pos:
+                        if located_lesson == lesson:
+                            if duration != 0:
+                                duration -= 1
+                            else:
+                                les_pos.remove(located_lesson)
+                            break
+        return
+
+    def update_lesson_amount(self, lesson: Lesson, old_amount) -> None:
+        """
+        Метод валидации lesson после обновления amount.
+        Удаляет или перемещает в нераспределенные уроки переданный объект.
+        :param lesson: Объекта класса Lesson, у которого обновилось количество.
+        :param old_amount: Предыдущий amount у lesson.
+        """
         amount = lesson.amount - old_amount
         if amount == 0:
             return
         elif amount > 0:
-            for i in range(amount):
-                self.unallocated.append(lesson)
-            self.unallocated.sort(key=lambda x: x.id, reverse=False)
+            self._append_into_unalloc_list(lesson)
             return
         else:
             position = 0
@@ -344,27 +514,55 @@ class School:
                             break
         return
 
-    def append_pos(self, sender: Lesson, from_day: int = -1) -> (list[bool], list[list[list[Lesson]]]):
+    def get_lesson_conflicts(self, sender: Lesson, from_day: int = -1) -> (list[bool], list[list[list[Lesson]]]):
+        """
+        Метод возвращает список булевых значений. True - поместить урок в данное место возможно. False - невозможно.
+        Воторой список - список конфликтных уроков, в случае, если поместить урок невозможно.
+        :param sender: lesson, для которого необходимо найти конфликты.
+        :param from_day: День, из которого перемещается lesson. Если lesson не распределён, оставить незаполненным.
+        """
+
         times = [[sender.is_available(day, les_pos) for les_pos in range(self.amount_lessons)
                   ] for day in range(self.amount_days)]
         conflicts = [[[] for _ in range(self.amount_lessons)] for _ in range(self.amount_days)]
         for day in range(self.amount_days):
-            for les_pos in range(self.amount_lessons):
-                for receiver in self.timetable[day][les_pos]:
-                    if receiver == sender and day != from_day:
-                        for pos in range(self.amount_lessons):
-                            times[day][pos] = False
-                            conflicts[day][pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                        break
+            for les_pos in range(self.amount_lessons - sender.duration + 1):
+                for d in range(sender.duration):
+                    for receiver in self.timetable[day][les_pos + d]:
+                        if receiver == sender and day != from_day and d == 0:
+                            for pos in range(self.amount_lessons):
+                                times[day][pos] = False
+                                conflicts[day][pos].append(
+                                    {"lesson": receiver, "day": day, "position": les_pos})
+                            break
 
-                    if receiver.teacher == sender.teacher:
-                        if receiver.student_class != sender.student_class:
-                            times[day][les_pos] = False
-                            conflicts[day][les_pos].append({"lesson": receiver, "day": day, "position": les_pos})
-                            continue
+                        same_teachers = False
+                        for teacher in sender.teacher:
+                            for new_teacher in receiver.teacher:
+                                if teacher == new_teacher:
+                                    same_teachers = True
+                                    break
+                            if same_teachers:
+                                break
+
+                        if same_teachers:
+                            if receiver.student_class != sender.student_class:
+                                times[day][les_pos + d] = False
+                                conflicts[day][les_pos].append(
+                                    {"lesson": receiver, "day": day, "position": les_pos + d})
+                                continue
         return times, conflicts
 
-    def toJSON(self):
+    def remove_duration(self, lesson: Lesson, day: int, les_pos: int) -> None:
+        start_end = lesson.get_start_end_lesson(day, les_pos)
+        for i in range(start_end['start'], start_end['end'] + 1):
+            for j in range(len(self.timetable[day][i])):
+                if self.timetable[day][i][j] == lesson:
+                    self.timetable[day][i].remove(lesson)
+                    break
+        return
+
+    def toJSON(self) -> dict:
         school_tojson = {"name": self.name,
                          "amount_days": self.amount_days,
                          "amount_lessons": self.amount_lessons,
