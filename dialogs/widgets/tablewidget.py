@@ -190,6 +190,7 @@ class MyTableWidget(QtWidgets.QTableWidget):
             if index is not None:
                 item = self.itemFromIndex(index)
                 if item is not None:
+                    item.update()
                     self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
 
         super(MyTableWidget, self).dragLeaveEvent(e)
