@@ -462,11 +462,11 @@ class School:
             for les_pos in range(self.amount_lessons - sender.duration + 1):
                 for d in range(sender.duration):
                     for receiver in self.timetable[day][les_pos + d]:
-                        if receiver == sender and day != from_day:
+                        if receiver == sender and day != from_day and d == 0:
                             for pos in range(self.amount_lessons):
-                                times[day][pos + d] = False
+                                times[day][pos] = False
                                 conflicts[day][pos].append(
-                                    {"lesson": receiver, "day": day, "position": les_pos + d})
+                                    {"lesson": receiver, "day": day, "position": les_pos})
                             break
 
                         same_teachers = False

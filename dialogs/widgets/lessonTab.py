@@ -66,7 +66,7 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             subject = self.school.subjects[dlg.subject_combobox.currentIndex()]
             student_class = self.school.student_classes[dlg.class_combobox.currentIndex()]
             amount = int(SchoolData.get_max_lesson_in_week(self.school.amount_days)[dlg.count_combobox.currentIndex()])
-            duration = dlg.count_combobox.currentIndex() + 1
+            duration = dlg.duration_combobox.currentIndex() + 1
             lesson = Lesson(subject, teacher, student_class, amount, duration)
             self.school.lessons.append(lesson)
 
