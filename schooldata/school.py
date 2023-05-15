@@ -421,8 +421,8 @@ class School:
         not_changed = not_changed and self._update_lesson_teachers(lesson, old_teachers)
         if not not_changed:
             self._remove_lesson_from_timetable(lesson)
-        self._update_lesson_duration(lesson, old_duration)
         self.update_lesson_amount(lesson, old_amount)
+        self._update_lesson_duration(lesson, old_duration)
         return
 
     @staticmethod
