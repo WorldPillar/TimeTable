@@ -8,6 +8,10 @@ from schooldata.school import School, Lesson, StudentClass
 
 
 class BookedMenuLabelAction(QtWidgets.QWidgetAction):
+    """
+    Класс Действие-надпись у меню для занятой ячейки таблицы.
+    """
+
     def __init__(self, parent, lesson: Lesson):
         super(BookedMenuLabelAction, self).__init__(parent)
         widget = QtWidgets.QWidget()
@@ -22,6 +26,10 @@ class BookedMenuLabelAction(QtWidgets.QWidgetAction):
 
 
 class EmptyMenuLabelAction(QtWidgets.QWidgetAction):
+    """
+    Класс Действие-надпись у меню для пустой ячейки таблицы.
+    """
+
     def __init__(self, parent, student_class: StudentClass):
         super(EmptyMenuLabelAction, self).__init__(parent)
         widget = QtWidgets.QWidget()
@@ -35,6 +43,10 @@ class EmptyMenuLabelAction(QtWidgets.QWidgetAction):
 
 
 class ConflictAction(QtWidgets.QWidgetAction):
+    """
+    Класс Действие-надпись у меню, список конфликтных уроков.
+    """
+
     def __init__(self, parent, conflicts, to_day, to_les_pos):
         super(ConflictAction, self).__init__(parent)
         widget = QtWidgets.QWidget()
@@ -62,6 +74,10 @@ class ConflictAction(QtWidgets.QWidgetAction):
 
 
 class HeaderItem(QtWidgets.QTableWidgetItem):
+    """
+    Класс ячейки заголовка таблицы.
+    """
+
     def __init__(self, student_class: StudentClass):
         super().__init__()
         self.setText(student_class.name)
@@ -74,6 +90,10 @@ class HeaderItem(QtWidgets.QTableWidgetItem):
 
 
 class TimeTableItem(QtWidgets.QTableWidgetItem):
+    """
+    Класс ячейки таблицы.
+    """
+
     def __init__(self, lesson: Lesson):
         super().__init__(lesson.subject.name)
         self.lesson = lesson
@@ -97,6 +117,10 @@ class TimeTableItem(QtWidgets.QTableWidgetItem):
 
 
 class MyTableWidget(QtWidgets.QTableWidget):
+    """
+    Таблица расписания занятий.
+    """
+
     def __init__(self, parent, mainapp):
         super(MyTableWidget, self).__init__(parent)
         self.mainapp = mainapp
@@ -104,6 +128,8 @@ class MyTableWidget(QtWidgets.QTableWidget):
         self.swapping_available = []
         self.conflicts = []
         self.last_selected_row = None
+        self.is_drop = False
+
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_AlwaysShowToolTips, True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.setAcceptDrops(True)
@@ -183,19 +209,6 @@ class MyTableWidget(QtWidgets.QTableWidget):
             self.setHorizontalHeaderItem(i, item)
         return
 
-    def dragLeaveEvent(self, e: QtGui.QDragLeaveEvent) -> None:
-        self.reset_conflicts()
-        if len(self.selectedIndexes()) != 0:
-            index = self.selectedIndexes()[0]
-            if index is not None:
-                item = self.itemFromIndex(index)
-                if item is not None:
-                    item.update()
-                    self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
-
-        super(MyTableWidget, self).dragLeaveEvent(e)
-        return
-
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
         self.mark_conflicts(self.mainapp.school.amount_lessons)
         if len(self.selectedIndexes()) != 0:
@@ -210,6 +223,8 @@ class MyTableWidget(QtWidgets.QTableWidget):
         return
 
     def startDrag(self, supportedActions: QtCore.Qt.DropAction) -> None:
+        self.is_drop = False
+
         from_index = self.selectedIndexes()[0]
         from_item = self.itemFromIndex(from_index)
         if from_item is None:
@@ -219,16 +234,25 @@ class MyTableWidget(QtWidgets.QTableWidget):
         from_day, from_les_pos = utils.column_to_days_lessons(from_index.column(), school.amount_lessons)
 
         self.last_selected_row = from_item.lesson.student_class.id
+        self.set_color(True)
 
         self.swapping_available, self.conflicts = school.get_lesson_conflicts(from_item.lesson, from_day)
         self.mark_conflicts(school.amount_lessons)
 
         super(MyTableWidget, self).startDrag(supportedActions)
+        self.set_color(False)
+        if not self.is_drop:
+            self.reset_conflicts()
+            from_item.update()
+            self.setSpan(from_index.row(), from_index.column(), 1, from_item.lesson.duration)
         return
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        self.is_drop = True
+
         sender = event.source()
         is_droped, newItem = self.dropData(event, sender)
+        self.reset_conflicts()
         if is_droped:
             super(MyTableWidget, self).dropEvent(event)
             newItem.set_tooltip_info()
@@ -259,7 +283,6 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         if is_ignore:
             event.ignore()
-            self.reset_conflicts()
             return False, None
 
         is_swapping_available = self.swapping_available[to_day][to_les_pos]
@@ -298,7 +321,6 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         if sender != self:
             self.unallocated_list.set_color(False)
-        self.reset_conflicts()
         return is_swapping_available, newItem
 
     @staticmethod

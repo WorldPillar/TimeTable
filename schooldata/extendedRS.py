@@ -76,7 +76,6 @@ class ExtendedRecursiveSwapping:
 
     def recursive_swapping(self, school: School, unallocated_lesson: Lesson, step: int):
         if step == 14:
-            # print(f'Слишком большая рекурсия\nНераспределенный урок: {unallocated_lesson.get_string()}')
             return False, None
 
         conflicts = self.find_conflicts(school, unallocated_lesson)
@@ -131,8 +130,6 @@ class ExtendedRecursiveSwapping:
         :param step: Шаг рекурсии.
         :return: Результат в виде bool.
         """
-        if lesson.id == 256:
-            pass
         popped_lessons = self.throw_conflicts(school, lesson, day, les_pos)
         if conflicts[day][les_pos] >= 100:
             popped_lessons.append(self.throw_same_lesson(school, lesson, day))

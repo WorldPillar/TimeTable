@@ -8,6 +8,10 @@ from dialogs.widgets.tablewidget import MyTableWidget
 
 
 class ListWidgetItem(QtWidgets.QListWidgetItem):
+    """
+    Класс ячейки списка MyListWidget
+    """
+
     def __init__(self, lesson: Lesson, amount: int = 1):
         super().__init__(lesson.subject.name)
         self.lesson = lesson
@@ -17,12 +21,18 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
         self.set_controls()
 
     def set_controls(self) -> None:
+        """
+        Метод устанавливает внешний вид элемента.
+        """
         self.setSizeHint(QSize(45, 28))
         self.setBackground(QtGui.QColor(255, 255, 255))
         self.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         return
 
     def set_tooltip_info(self) -> None:
+        """
+        Метод устанавливает tooltip элемента.
+        """
         teachers_name = ''
         for teacher in self.lesson.teachers:
             teachers_name = teachers_name + f'{str(teacher.abbreviation or "")} - '\
@@ -35,21 +45,36 @@ class ListWidgetItem(QtWidgets.QListWidgetItem):
         return
 
     def update(self) -> None:
+        """
+        Метод обновляет текст элемента.
+        """
         self.setText(self.lesson.subject.abbreviation)
         return
 
     def add_count(self) -> int:
+        """
+        Метод увеличивает количество уроков в элементе на 1.
+        :return: Новое количество уроков.
+        """
         self.amount += 1
         self.set_tooltip_info()
         return self.amount
 
     def remove_count(self) -> int:
+        """
+        Метод уменьшает количество уроков в элементе на 1.
+        :return: Новое количество уроков.
+        """
         self.amount -= 1
         self.set_tooltip_info()
         return self.amount
 
 
 class MyListWidget(QtWidgets.QListWidget):
+    """
+    Класс списка нераспределенных уроков.
+    """
+
     def __init__(self, parent, timetable: MyTableWidget):
         super(MyListWidget, self).__init__(parent)
         self.mainapp = parent
@@ -59,8 +84,12 @@ class MyListWidget(QtWidgets.QListWidget):
 
         self.timetable = timetable
         self.last_selected_row = None
+        self.is_drop = False
 
     def set_drag_and_drop(self):
+        """
+        Метод устанавливает внешний вид списка и правила drag and drop.
+        """
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
@@ -74,13 +103,17 @@ class MyListWidget(QtWidgets.QListWidget):
         self.setStyleSheet("""QListWidget{background: rgb(225, 225, 225);}""")
         return
 
-    def add_unallocated_lessons(self, lessons: list[Lesson]):
+    def add_unallocated_lessons(self, lessons: list[Lesson]) -> None:
+        """
+        Метод переопределяет список нераспределенных уроков.
+        """
         self.clear()
         if len(lessons) == 0:
             return
         prev_lesson = lessons[0]
         count = 0
         for lesson in lessons:
+            # Увеличиваем количество совпадающих уроков, находящихся в списке нераспределенных
             if prev_lesson == lesson:
                 count += 1
             else:
@@ -94,7 +127,11 @@ class MyListWidget(QtWidgets.QListWidget):
         return
 
     def add_unallocated_lesson(self, lesson: Lesson) -> None:
+        """
+        Добавляет урок в список нераспределенных.
+        """
         for pos in range(self.count()):
+            # Если урок уже присутствует в списке, то увеличивается количество и выходит из метода.
             if lesson == self.item(pos).lesson:
                 self.mainapp.school.unallocated.append(lesson)
                 self.item(pos).add_count()
@@ -106,6 +143,10 @@ class MyListWidget(QtWidgets.QListWidget):
         return
 
     def startDrag(self, supportedActions: QtCore.Qt.DropAction) -> None:
+        """
+        Метод переопределяет событие startDrag
+        """
+        self.is_drop = False
         school = self.mainapp.school
         self.timetable.clearSelection()
 
@@ -118,12 +159,16 @@ class MyListWidget(QtWidgets.QListWidget):
         self.timetable.mark_conflicts(school.amount_lessons)
 
         super(MyListWidget, self).startDrag(supportedActions)
+        self.set_color(False)
         return
-    
+
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        """
+        Метод переопределяет событие dropEvent
+        """
+        self.is_drop = True
         sender = event.source()
         if sender == self:
-            self.set_color(False)
             return
 
         school = self.mainapp.school
@@ -137,11 +182,21 @@ class MyListWidget(QtWidgets.QListWidget):
 
     @staticmethod
     def _throw_lesson(school: School, throw_lesson: Lesson, day: int, les_pos: int) -> None:
+        """
+        Метод выбрасывает урок из расписания занятий.
+        :param school: Школа, из расписания которой выбрасывается урок.
+        :param throw_lesson: Выбрасываемый урок.
+        :param day: День, в котором находится выбрасываемый урок.
+        :param les_pos: Позиция дня, в которой находится выбрасываемый урок.
+        """
         school.remove_duration(throw_lesson, day, les_pos)
         throw_lesson.set_available(day, les_pos)
         return
 
     def takeItem(self, row: int) -> QtWidgets.QListWidgetItem:
+        """
+        Метод переопределяет событие takeItem
+        """
         school = self.mainapp.school
 
         pop_item = self.item(row)
@@ -156,6 +211,13 @@ class MyListWidget(QtWidgets.QListWidget):
             return pop_item
 
     def get_available_items(self, class_id: int, to_day: int, to_les_pos: int) -> list[QListWidgetItem]:
+        """
+        Метод возвращает список свободных уроков.
+        :param class_id: id класса, для которого выбираются уроки.
+        :param to_day: День, для которого выбираются уроки.
+        :param to_les_pos: Позиция дня, для которой выбираются уроки.
+        :return: Список ListWidgetItem со свободными уроками.
+        """
         available_items = []
 
         for pos in range(self.count()):
@@ -166,9 +228,14 @@ class MyListWidget(QtWidgets.QListWidget):
         return available_items
 
     def set_color(self, on: bool) -> None:
+        """
+        Метод меняет цвет заголовков MyTableWidget
+        :param on: Менять цвет или сбросить.
+        """
         item = self.timetable.verticalHeaderItem(self.last_selected_row)
         if on:
             item.setBackground(QtGui.QColor(0, 204, 0))
         else:
             item.setBackground(QtGui.QColor(255, 255, 255))
         self.timetable.setVerticalHeaderItem(self.last_selected_row, item)
+        return

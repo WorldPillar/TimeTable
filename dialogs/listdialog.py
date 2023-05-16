@@ -9,6 +9,10 @@ from windows import listsWindow
 
 
 class ListDialog(QDialog, listsWindow.Ui_dialogLists):
+    """
+    Диалоговое окно списков школы.
+    """
+
     def __init__(self, parent, school: School):
         super(ListDialog, self).__init__(parent)
         self.setupUi(self)

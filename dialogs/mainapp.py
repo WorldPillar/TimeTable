@@ -20,6 +20,10 @@ desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
 
 
 class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
+    """
+    Главное окно программы
+    """
+
     def __init__(self):
         super().__init__()
         self.school = None
@@ -58,6 +62,11 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         return
 
     def _create_days_table(self, days_amount: int = 5, lessons_amount: int = 6) -> None:
+        """
+        Метод создаёт таблицу дней как заголовок общей таблицы.
+        :param days_amount: Количество дней в рабочей неделе.
+        :param lessons_amount: Количество уроков в день.
+        """
         self.tableWidget_days.setRowCount(0)
         self.tableWidget_days.setFixedHeight(15)
         self.tableWidget_days.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

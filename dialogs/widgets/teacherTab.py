@@ -8,6 +8,10 @@ from windows import tab
 
 
 class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
+    """
+    Класс вкладки "Учителя" списков школы
+    """
+
     def __init__(self, school: School, headers: [str]):
         super(TeacherTab, self).__init__()
         self.setupUi(self)
@@ -18,12 +22,15 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
         self.set_table()
 
         self.tableWidget.selectionModel().selectionChanged.connect(self.change_btn_state)
-        self.btn_new.clicked.connect(self.new)
-        self.btn_edit.clicked.connect(self.edit)
-        self.btn_delete.clicked.connect(self.delete)
+        self.btn_new.clicked.connect(self._new)
+        self.btn_edit.clicked.connect(self._edit)
+        self.btn_delete.clicked.connect(self._delete)
         self.btn_worktime.clicked.connect(self.worktime)
 
     def add_button(self) -> QtWidgets.QToolButton:
+        """
+        Метод добавляет кнопку Рабочее время.
+        """
         line = QtWidgets.QFrame(parent=self)
         line.setFrameShape(QtWidgets.QFrame.Shape.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
@@ -42,7 +49,10 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
         self.horizontalLayout.addLayout(self.verticalLayout)
         return btn_worktime
 
-    def change_btn_state(self):
+    def change_btn_state(self) -> None:
+        """
+        Метод изменяет состояние кнопок.
+        """
         if self.tableWidget.selectedItems():
             self.btn_edit.setEnabled(True)
             self.btn_delete.setEnabled(True)
@@ -53,27 +63,45 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
             self.btn_worktime.setEnabled(False)
         return
 
-    def insert_row(self, table, new_obj):
+    def insert_row(self, table, new_obj) -> None:
+        """
+        Добавляет новую строчку в таблицу.
+        :param table: Таблица, в которую добавляется строчка.
+        :param new_obj: Объект, который помещается в таблицу.
+        """
         rowcount = table.rowCount()
         table.insertRow(rowcount)
-        self.update_row(table, new_obj, rowcount)
+        self._update_row(table, new_obj, rowcount)
 
-    def update_row(self, table, new_obj, row):
+    @staticmethod
+    def _update_row(table, new_obj, row) -> None:
+        """
+        Обновление информации в строчке таблицы.
+        :param table: Таблица, в которой обновляется информация.
+        :param new_obj: Объект, на основе которого обновится информация.
+        :param row: Строчка, информацию которой необходимо обновить.
+        """
         i = 0
         for attribute in new_obj.get_attributes():
             table.setItem(row, i, QTableWidgetItem(str(attribute or '')))
             i += 1
 
-    def set_table(self):
+    def set_table(self) -> None:
+        """
+        Создание таблицы.
+        """
         self.tableWidget.setColumnCount(len(self.headers))
         self.tableWidget.setHorizontalHeaderLabels(self.headers)
         self.tableWidget.setRowCount(len(self.school.teachers))
 
         for row in range(self.tableWidget.rowCount()):
-            self.update_row(self.tableWidget, self.school.teachers[row], row)
+            self._update_row(self.tableWidget, self.school.teachers[row], row)
         return
 
-    def new(self):
+    def _new(self) -> None:
+        """
+        Метод создания нового объекта.
+        """
         dlg = TeacherDialog(self)
         if dlg.exec():
             family = dlg.family_lineEdit.text()
@@ -90,7 +118,10 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
         self.tableWidget.clearSelection()
         return
 
-    def edit(self):
+    def _edit(self) -> None:
+        """
+        Метод редактирования информации выбранного объекта таблицы.
+        """
         position = self.tableWidget.selectedItems()[0].row()
         teacher = self.school.teachers[position]
         dlg = TeacherDialog(self, teacher)
@@ -103,10 +134,13 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
             except ValueError:
                 workload = None
             teacher.update_data(family, name, workload, abb)
-            self.update_row(self.tableWidget, teacher, position)
+            self._update_row(self.tableWidget, teacher, position)
         return
 
-    def delete(self):
+    def _delete(self) -> None:
+        """
+        Метод удаления выбранного объекта таблицы.
+        """
         position = self.tableWidget.selectedItems()[0].row()
         self.tableWidget.removeRow(position)
         self.school.pop_teacher(position)
@@ -114,7 +148,10 @@ class TeacherTab(QtWidgets.QTabWidget, tab.Ui_Form):
         self.tableWidget.clearSelection()
         return
 
-    def worktime(self):
+    def worktime(self) -> None:
+        """
+        Метод вызова диалогового окна редактирования рабочей недели выбранного объекта.
+        """
         position = self.tableWidget.selectedItems()[0].row()
         teacher = self.school.teachers[position]
         dlg = WorkTimeDialog(self, teacher)

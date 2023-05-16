@@ -10,27 +10,32 @@ from windows import tab
 
 
 class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
+    """
+    Класс вкладки "Уроки" списков школы
+    """
+
     def __init__(self, school: School, headers: [str]):
         super(LessonTab, self).__init__()
         self.setupUi(self)
         self.headers = headers
         self.school = school
 
-        self.add_spacer()
+        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum,
+                                           QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout.addItem(spacerItem)
+        self.horizontalLayout.addLayout(self.verticalLayout)
+
         self.set_table()
 
         self.tableWidget.selectionModel().selectionChanged.connect(self.change_btn_state)
-        self.btn_new.clicked.connect(self.new)
-        self.btn_edit.clicked.connect(self.edit)
-        self.btn_delete.clicked.connect(self.delete)
+        self.btn_new.clicked.connect(self._new)
+        self.btn_edit.clicked.connect(self._edit)
+        self.btn_delete.clicked.connect(self._delete)
 
-    def add_spacer(self):
-        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.verticalLayout.addItem(spacerItem)
-        self.horizontalLayout.addLayout(self.verticalLayout)
-        return
-
-    def change_btn_state(self):
+    def change_btn_state(self) -> None:
+        """
+        Метод изменяет состояние кнопок.
+        """
         if self.tableWidget.selectedItems():
             self.btn_edit.setEnabled(True)
             self.btn_delete.setEnabled(True)
@@ -39,18 +44,33 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             self.btn_delete.setEnabled(False)
         return
 
-    def insert_row(self, table, new_obj):
+    def insert_row(self, table, new_obj) -> None:
+        """
+        Добавляет новую строчку в таблицу.
+        :param table: Таблица, в которую добавляется строчка.
+        :param new_obj: Объект, который помещается в таблицу.
+        """
         rowcount = table.rowCount()
         table.insertRow(rowcount)
         self.update_row(table, new_obj, rowcount)
 
-    def update_row(self, table, new_obj, row):
+    @staticmethod
+    def update_row(table, new_obj, row) -> None:
+        """
+        Обновление информации в строчке таблицы.
+        :param table: Таблица, в которой обновляется информация.
+        :param new_obj: Объект, на основе которого обновится информация.
+        :param row: Строчка, информацию которой необходимо обновить.
+        """
         i = 0
         for attribute in new_obj.get_attributes():
             table.setItem(row, i, QTableWidgetItem(str(attribute or '')))
             i += 1
 
-    def set_table(self):
+    def set_table(self) -> None:
+        """
+        Создание таблицы.
+        """
         self.tableWidget.setColumnCount(len(self.headers))
         self.tableWidget.setHorizontalHeaderLabels(self.headers)
         self.tableWidget.setRowCount(len(self.school.lessons))
@@ -59,7 +79,10 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             self.update_row(self.tableWidget, self.school.lessons[row], row)
         return
 
-    def new(self):
+    def _new(self) -> None:
+        """
+        Метод создания нового объекта.
+        """
         dlg = LessonDialog(self, self.school)
         if dlg.exec():
             teacher = self.school.teachers[dlg.teacher_combobox.currentIndex()]
@@ -81,7 +104,10 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
         self.tableWidget.clearSelection()
         return
 
-    def edit(self):
+    def _edit(self) -> None:
+        """
+        Метод редактирования информации выбранного объекта таблицы.
+        """
         position = self.tableWidget.selectedItems()[0].row()
         lesson = self.school.lessons[position]
         dlg = LessonDialog(self, self.school, lesson)
@@ -108,7 +134,10 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
             self.update_row(self.tableWidget, lesson, position)
         return
 
-    def delete(self):
+    def _delete(self) -> None:
+        """
+        Метод удаления выбранного объекта таблицы.
+        """
         position = self.tableWidget.selectedItems()[0].row()
         self.tableWidget.removeRow(position)
         self.school.pop_lesson(position)

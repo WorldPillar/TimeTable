@@ -1,14 +1,29 @@
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView, QDialogButtonBox, QPushButton, QComboBox
+from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView,\
+    QDialogButtonBox, QPushButton, QComboBox, QMessageBox
 
 from schooldata.data import SchoolData
 from schooldata.school import School, Subject, StudentClass, Teacher, Lesson
 from windows import subjectWindow, classWindow, teacherWindow, lessonWindow, worktimeWindow, schoolWindow
 
 
+def showMessage(message: str = 'Заполните все необходимые поля'):
+    msg = QMessageBox()
+    msg.setWindowTitle('Ошибка')
+    msg.setText(message)
+    msg.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+    msg.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+    msg.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
+    msg.exec()
+
+
 class SchoolDialog(QDialog, schoolWindow.Ui_dialogSchool):
+    """
+    Диалоговое окно ввода информации о школе.
+    """
+
     def __init__(self, parent):
         super(SchoolDialog, self).__init__(parent)
         self.setupUi(self)
@@ -30,6 +45,10 @@ class SchoolDialog(QDialog, schoolWindow.Ui_dialogSchool):
 
 
 class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
+    """
+    Диалоговое окно ввода информации о предмете.
+    """
+
     def __init__(self, parent, subject: Subject = None):
         super(SubjectDialog, self).__init__(parent)
         self.setupUi(self)
@@ -42,11 +61,15 @@ class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
         self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
 
         self.name_lineEdit.textChanged.connect(self.abb_constructor)
+        # Заполняем поля, если предмет редактируется
         if subject is not None:
             self.name_lineEdit.setText(subject.name)
             self.abb_lineEdit.setText(subject.abbreviation)
 
     def abb_constructor(self) -> None:
+        """
+        Метод генерации сокращения названия.
+        """
         words = list(filter(None, self.name_lineEdit.text().split(' ')))
 
         abb = ''
@@ -59,14 +82,23 @@ class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
         return
 
     def accept(self) -> None:
+        """
+        Проверка заполненности полей. Если необходимые поля не заполнены, высвечивается ошибка.
+        """
         if self.name_lineEdit.text():
             if self.abb_lineEdit.text() == '':
                 self.abb_constructor()
             super().accept()
+        else:
+            showMessage()
         return
 
 
 class ClassDialog(QDialog, classWindow.Ui_dialogClass):
+    """
+    Диалоговое окно ввода информации о классе.
+    """
+
     def __init__(self, parent, student_class: StudentClass = None):
         super(ClassDialog, self).__init__(parent)
         self.setupUi(self)
@@ -79,11 +111,15 @@ class ClassDialog(QDialog, classWindow.Ui_dialogClass):
         self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
 
         self.name_lineEdit.textChanged.connect(self.abb_constructor)
+        # Заполняем поля, если класс редактируется
         if student_class is not None:
             self.name_lineEdit.setText(student_class.name)
             self.abb_lineEdit.setText(student_class.abbreviation)
 
     def abb_constructor(self) -> None:
+        """
+        Метод генерации сокращения названия.
+        """
         words = list(filter(None, self.name_lineEdit.text().split(' ')))
 
         abb = ''
@@ -96,14 +132,23 @@ class ClassDialog(QDialog, classWindow.Ui_dialogClass):
         return
 
     def accept(self) -> None:
+        """
+        Проверка заполненности полей. Если необходимые поля не заполнены, высвечивается ошибка.
+        """
         if self.name_lineEdit.text():
             if self.abb_lineEdit.text() == '':
                 self.abb_constructor()
             super().accept()
+        else:
+            showMessage()
         return
 
 
 class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
+    """
+    Диалоговое окно ввода информации об учителе.
+    """
+
     def __init__(self, parent, teacher: Teacher = None):
         super(TeacherDialog, self).__init__(parent)
         self.setupUi(self)
@@ -117,6 +162,7 @@ class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
 
         self.family_lineEdit.textChanged.connect(self.abb_constructor)
         self.name_lineEdit.textChanged.connect(self.abb_constructor)
+        # Заполняем поля, если учитель редактируется
         if teacher is not None:
             self.family_lineEdit.setText(teacher.family)
             self.name_lineEdit.setText(teacher.name)
@@ -124,6 +170,9 @@ class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
             self.workload_lineEdit.setText(str(teacher.workload or ''))
 
     def abb_constructor(self) -> None:
+        """
+        Метод генерации сокращения названия.
+        """
         family = self.family_lineEdit.text()
         name = self.name_lineEdit.text()
 
@@ -132,14 +181,23 @@ class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
         return
 
     def accept(self) -> None:
-        if self.family_lineEdit.text():
+        """
+        Проверка заполненности полей. Если необходимые поля не заполнены, высвечивается ошибка.
+        """
+        if self.family_lineEdit.text() and self.name_lineEdit.text():
             if self.abb_lineEdit.text() == '':
                 self.abb_constructor()
             super().accept()
+        else:
+            showMessage()
         return
 
 
 class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
+    """
+    Диалоговое окно ввода информации об уроке.
+    """
+
     def __init__(self, parent, school: School, lesson: Lesson = None):
         super(LessonDialog, self).__init__(parent)
         self.setupUi(self)
@@ -160,6 +218,7 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
 
         self.school = school
         self.fill_combobox()
+        # Заполняем поля, если урок редактируется
         if lesson is not None:
             self.teacher_combobox.setCurrentIndex(lesson.teachers[0].id)
             if len(lesson.teachers) == 2:
@@ -171,20 +230,28 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
             self.duration_combobox.setCurrentIndex(lesson.duration - 1)
 
     def pushButtonAdd(self) -> QPushButton:
+        """
+        Метод добавляет кнопку Добавить.
+        """
         buttonAdd = QPushButton('Добавить')
         buttonAdd.clicked.connect(self.addCombobox)
         self.secondTeacherCombobox = None
 
         self.gridLayout_2.addWidget(buttonAdd, 2, 1)
-        if self.deleteButton is not None:
-            self.gridLayout_2.itemAtPosition(3, 1).widget().hide()
+        self.gridLayout_2.itemAtPosition(3, 1).widget().hide()
         return buttonAdd
 
     def addCombobox(self) -> None:
+        """
+        Метод связывает событие нажатия кнопки Добавить и putCombobox.
+        """
         self.putCombobox(-1)
         return
 
     def putCombobox(self, teacherId: int = -1) -> None:
+        """
+        Метод добавляет combobox для второго учителя
+        """
         self.secondTeacherCombobox = QComboBox()
         self.secondTeacherCombobox.addItems([x.get_full_name() for x in self.school.teachers])
         self.secondTeacherCombobox.setCurrentIndex(teacherId)
@@ -194,6 +261,9 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         return
 
     def fill_combobox(self) -> None:
+        """
+        Метод заполняет поля урока.
+        """
         self.teacher_combobox.addItems([x.get_full_name() for x in self.school.teachers])
         self.teacher_combobox.setCurrentIndex(-1)
         self.class_combobox.addItems([x.get_full_name() for x in self.school.student_classes])
@@ -207,19 +277,30 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         return
 
     def accept(self) -> None:
+        """
+        Проверка заполненности полей и уникальности данных.
+        Если поля не заполнены, либо совпадают учителя, то высвечивается ошибка.
+        """
         if (self.teacher_combobox.currentIndex() == -1) or (self.class_combobox.currentIndex() == -1) or \
                 (self.subject_combobox.currentIndex() == -1) or (self.count_combobox.currentIndex() == -1):
+            showMessage()
             return
         if self.secondTeacherCombobox is not None:
             if self.teacher_combobox.currentIndex() == self.secondTeacherCombobox.currentIndex():
+                showMessage('Учителя не могут быть одинаковыми')
                 return
             if self.secondTeacherCombobox.currentIndex() == -1:
+                showMessage()
                 return
         super().accept()
         return
 
 
 class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
+    """
+    Диалоговое окно редактирования рабочей недели.
+    """
+
     def __init__(self, parent, item):
         super(WorkTimeDialog, self).__init__(parent)
         self.setupUi(self)
@@ -228,6 +309,9 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
         self.set_tables()
 
     def set_tables(self) -> None:
+        """
+        Начальная отрисовка таблицы.
+        """
         self.tableWidget.setColumnCount(len(self.item.worktime[0]))
         self.tableWidget.setRowCount(len(self.item.worktime))
 
@@ -251,6 +335,9 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
         return
 
     def item_clicked(self) -> None:
+        """
+        Событие, вызываемое при нажатии на ячейку. Изменяет её состояние на противоположное.
+        """
         (row, col) = (self.tableWidget.selectedItems()[0].row(), self.tableWidget.selectedItems()[0].column())
         self.tableWidget.item(row, col).reverse()
 
@@ -264,6 +351,9 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
         return
 
     def accept(self) -> None:
+        """
+        Метод, заполняющий таблицу рабочей недели для объекта на основе отредактированной таблицы self.tableWidget.
+        """
         for i in range(self.tableWidget.rowCount()):
             for j in range(self.tableWidget.columnCount()):
                 self.item.worktime[i][j] = self.tableWidget.item(i, j).is_available
@@ -272,6 +362,10 @@ class WorkTimeDialog(QDialog, worktimeWindow.Ui_WorkTimeDialog):
 
 
 class WorkTimeItem(QTableWidgetItem):
+    """
+    Класс ячейки таблицы в WorkTimeDialog
+    """
+
     def __init__(self, available: int):
         super().__init__('')
         self.is_available = available
