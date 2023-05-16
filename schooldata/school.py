@@ -398,9 +398,15 @@ class School:
         length = len(self.lessons)
         i = 0
         while i != length:
-            if self.lessons[i].teachers == popped:
-                self.pop_lesson(i)
-                length -= 1
+            for teacher in self.lessons[i].teachers:
+                if teacher == popped:
+                    if len(self.lessons[i].teachers) == 1:
+                        self.pop_lesson(i)
+                        length -= 1
+                        break
+                    else:
+                        self.lessons[i].teachers.remove(teacher)
+                        break
             else:
                 i += 1
         return
@@ -621,9 +627,27 @@ class School:
         school_tojson = {"name": self.name,
                          "amount_days": self.amount_days,
                          "amount_lessons": self.amount_lessons,
-                         "teachers": [teacher.__dict__ for teacher in self.teachers],
+                         "teachers": [
+                             {
+                                 "id": teacher.id,
+                                 "family": teacher.family,
+                                 "name": teacher.name,
+                                 "abbreviation": teacher.abbreviation,
+                                 "workload": teacher.workload,
+                                 "lessons_count": teacher.lessons_count,
+                                 "worktime": teacher.worktime
+                             } for teacher in self.teachers
+                         ],
                          "subjects": [subject.__dict__ for subject in self.subjects],
-                         "student_classes": [student_class.__dict__ for student_class in self.student_classes],
+                         "student_classes": [
+                             {
+                                 "id": student_class.id,
+                                 "name": student_class.name,
+                                 "abbreviation": student_class.abbreviation,
+                                 "lessons_count": student_class.lessons_count,
+                                 "worktime": student_class.worktime
+                             } for student_class in self.student_classes
+                         ],
                          "lessons": [lesson.toJSON() for lesson in self.lessons]
                          }
         return school_tojson

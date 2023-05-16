@@ -37,10 +37,8 @@ class JSONProcessor:
             workload = teacher['workload']
             abbreviation = teacher['abbreviation']
             worktime = teacher['worktime']
-            current_worktime = teacher['current_worktime']
             new_teacher = Teacher(family, name, workload, abbreviation)
             new_teacher.worktime = worktime
-            new_teacher.current_worktime = current_worktime
             school.teachers.append(new_teacher)
 
         for subject in import_data['subjects']:
@@ -55,10 +53,8 @@ class JSONProcessor:
             name = student_class['name']
             abbreviation = student_class['abbreviation']
             worktime = student_class['worktime']
-            current_worktime = student_class['current_worktime']
             new_class = StudentClass(name, abbreviation)
             new_class.worktime = worktime
-            new_class.current_worktime = current_worktime
             school.student_classes.append(new_class)
 
         for lesson in import_data['lessons']:
@@ -70,7 +66,9 @@ class JSONProcessor:
             start_end_positions = lesson['start_end_positions']
             new_lesson = Lesson(subject, teachers[0], student_class, amount, duration)
             new_lesson.update_lesson_data(teachers=teachers)
-            new_lesson.start_end_positions = start_end_positions
+
+            for positions in start_end_positions:
+                new_lesson.set_unavailable(positions['day'], positions['start'])
             school.lessons.append(new_lesson)
 
         for lesson in school.lessons:
