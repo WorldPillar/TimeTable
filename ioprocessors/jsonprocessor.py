@@ -47,10 +47,8 @@ class JSONProcessor:
             name = subject['name']
             abbreviation = subject['abbreviation']
             worktime = subject['worktime']
-            current_worktime = subject['current_worktime']
             new_subject = Subject(name, abbreviation)
             new_subject.worktime = worktime
-            new_subject.current_worktime = current_worktime
             school.subjects.append(new_subject)
 
         for student_class in import_data['student_classes']:
@@ -70,19 +68,19 @@ class JSONProcessor:
             amount = lesson['amount']
             duration = lesson['duration']
             start_end_positions = lesson['start_end_positions']
-            current_worktime = lesson['current_worktime']
             new_lesson = Lesson(subject, teachers[0], student_class, amount, duration)
             new_lesson.update_lesson_data(teachers=teachers)
             new_lesson.start_end_positions = start_end_positions
-            new_lesson.current_worktime = current_worktime
             school.lessons.append(new_lesson)
 
-        timetable = import_data['timetable']
-        school.timetable = [[[school.lessons[lesson['lesson']] for lesson in les_pos] for les_pos in day
-                             ] for day in timetable]
-
-        unallocated = import_data['unallocated']
-        school.unallocated = [school.lessons[lesson['lesson']] for lesson in unallocated]
+        for lesson in school.lessons:
+            append = 0
+            for positions in lesson.start_end_positions:
+                for position in range(positions['start'], positions['end'] + 1):
+                    school.timetable[positions['day']][position].append(lesson)
+                append += 1
+            for i in range(lesson.amount - append):
+                school.unallocated.append(lesson)
         return school
 
     @staticmethod

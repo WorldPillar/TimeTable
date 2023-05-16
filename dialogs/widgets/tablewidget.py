@@ -83,7 +83,7 @@ class TimeTableItem(QtWidgets.QTableWidgetItem):
 
     def set_tooltip_info(self) -> None:
         teachers_name = ''
-        for teacher in self.lesson.teacher:
+        for teacher in self.lesson.teachers:
             teachers_name = teachers_name + f'{str(teacher.abbreviation or "")} - '\
                                             f'{str(teacher.family or "")} {str(teacher.name or "")}\n'
         tooltip = f'{str(self.lesson.subject.abbreviation or "")} - {self.lesson.subject.name}\n' \

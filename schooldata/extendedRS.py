@@ -186,8 +186,8 @@ class ExtendedRecursiveSwapping:
     @staticmethod
     def get_conflict_amount(lesson: Lesson, another_lesson: Lesson):
         conflicts = 0
-        for teacher in lesson.teacher:
-            for another_teacher in another_lesson.teacher:
+        for teacher in lesson.teachers:
+            for another_teacher in another_lesson.teachers:
                 if teacher == another_teacher:
                     conflicts += 1
                     break

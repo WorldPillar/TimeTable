@@ -43,7 +43,7 @@ def _get_id(lesson: Lesson, param: str) -> [int]:
     if param == 'class':
         return [lesson.student_class.id]
     else:
-        return [teacher.id for teacher in lesson.teacher]
+        return [teacher.id for teacher in lesson.teachers]
 
 
 class ExcelProcessor:

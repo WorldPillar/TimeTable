@@ -1,11 +1,32 @@
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView, QDialogButtonBox, QPushButton, QComboBox, QWidget
+from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView, QDialogButtonBox, QPushButton, QComboBox
 
 from schooldata.data import SchoolData
 from schooldata.school import School, Subject, StudentClass, Teacher, Lesson
-from windows import subjectWindow, classWindow, teacherWindow, lessonWindow, worktimeWindow
+from windows import subjectWindow, classWindow, teacherWindow, lessonWindow, worktimeWindow, schoolWindow
+
+
+class SchoolDialog(QDialog, schoolWindow.Ui_dialogSchool):
+    def __init__(self, parent):
+        super(SchoolDialog, self).__init__(parent)
+        self.setupUi(self)
+
+        self.amount_lessons_combobox.addItems(SchoolData.max_lessons_in_day)
+        self.amount_lessons_combobox.setCurrentIndex(7)
+        self.amount_lessons_combobox.setFixedWidth(60)
+
+        self.amount_days_combobox.addItems(SchoolData.get_days_positions())
+        self.amount_days_combobox.setCurrentIndex(4)
+        self.amount_days_combobox.setFixedWidth(60)
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setText('Ок')
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
+        self.setWindowIcon(QIcon())
+        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
 
 
 class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
@@ -140,9 +161,9 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         self.school = school
         self.fill_combobox()
         if lesson is not None:
-            self.teacher_combobox.setCurrentIndex(lesson.teacher[0].id)
-            if len(lesson.teacher) == 2:
-                self.putCombobox(lesson.teacher[1].id)
+            self.teacher_combobox.setCurrentIndex(lesson.teachers[0].id)
+            if len(lesson.teachers) == 2:
+                self.putCombobox(lesson.teachers[1].id)
 
             self.class_combobox.setCurrentIndex(lesson.student_class.id)
             self.subject_combobox.setCurrentIndex(lesson.subject.id)

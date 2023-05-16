@@ -72,7 +72,7 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
 
             if dlg.secondTeacherCombobox is not None:
                 secondTeacher = self.school.teachers[dlg.secondTeacherCombobox.currentIndex()]
-                lesson.teacher.append(secondTeacher)
+                lesson.teachers.append(secondTeacher)
 
             self.school.update_lesson_amount(lesson, 0)
 
@@ -97,7 +97,7 @@ class LessonTab(QtWidgets.QTabWidget, tab.Ui_Form):
 
             old_amount = lesson.amount
             old_duration = lesson.duration
-            old_teachers = deepcopy(lesson.teacher)
+            old_teachers = deepcopy(lesson.teachers)
             old_subject = deepcopy(lesson.subject)
             old_class = deepcopy(lesson.student_class)
 

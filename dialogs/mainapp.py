@@ -5,11 +5,12 @@ from PyQt6 import QtWidgets
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
+from dialogs.inputdialogs import SchoolDialog
 from dialogs.listdialog import ListDialog
-from windows import mainWindow, schoolWindow
+from windows import mainWindow
 from dialogs.widgets.listWidget import MyListWidget
 from ioprocessors.excelprocessor import ExcelProcessor
-from ioprocessors.jsonporcessor import JSONProcessor
+from ioprocessors.jsonprocessor import JSONProcessor
 from schooldata.data import SchoolData
 from schooldata.extendedRS import ExtendedRecursiveSwapping
 from schooldata.school import School
@@ -257,24 +258,3 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         self.tbtn_lesson.setDisabled(False)
         self.tbtn_scheduling.setDisabled(False)
         return
-
-
-class SchoolDialog(QtWidgets.QDialog, schoolWindow.Ui_dialogSchool):
-    def __init__(self, parent):
-        super(SchoolDialog, self).__init__(parent)
-        self.setupUi(self)
-
-        self.amount_lessons_combobox.addItems(SchoolData.max_lessons_in_day)
-        self.amount_lessons_combobox.setCurrentIndex(7)
-        self.amount_lessons_combobox.setFixedWidth(60)
-
-        self.amount_days_combobox.addItems(SchoolData.get_days_positions())
-        self.amount_days_combobox.setCurrentIndex(4)
-        self.amount_days_combobox.setFixedWidth(60)
-
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText('Ок')
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).setText('Отменить')
-        self.setWindowIcon(QIcon())
-        self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
-        self.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
-        self.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
