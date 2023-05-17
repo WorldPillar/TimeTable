@@ -71,5 +71,5 @@ class Ui_dialogTeacher(object):
         self.family_label.setText(_translate("dialogTeacher", "Фамилия:"))
         self.abb_label.setText(_translate("dialogTeacher", "Сокращение:"))
         self.name_label.setText(_translate("dialogTeacher", "Имя:"))
-        self.workload_label.setText(_translate("dialogTeacher", "Нагрузка:"))
+        self.workload_label.setText(_translate("dialogTeacher", "Ставка:"))
         self.label.setText(_translate("dialogTeacher", "(Необязательно)"))

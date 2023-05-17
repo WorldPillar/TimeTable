@@ -1,4 +1,5 @@
 import os
+import time
 from functools import partial
 
 from PyQt6 import QtWidgets
@@ -9,6 +10,7 @@ from dialogs.inputdialogs import SchoolDialog
 from dialogs.listdialog import ListDialog
 from windows import mainWindow
 from dialogs.widgets.listWidget import MyListWidget
+from dialogs.widgets.messageBox import showMessage
 from ioprocessors.excelprocessor import ExcelProcessor
 from ioprocessors.jsonprocessor import JSONProcessor
 from schooldata.data import SchoolData
@@ -140,11 +142,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
                 self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
                 self.tableWidget_timetable.fill_table(self.school)
             except BaseException:
-                errorbox = QtWidgets.QMessageBox(self)
-                errorbox.setWindowTitle('Ошибка')
-                errorbox.setText('Не получилось открыть файл')
-                errorbox.exec()
-
+                showMessage(title='Ошибка', message='Не получилось открыть файл')
         self.file_path = file_name
         return
 
@@ -155,13 +153,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         if self.file_path == '':
             self.save_as_file()
         else:
-            try:
-                JSONProcessor.json_save(self.file_path, self.school)
-            except BaseException:
-                errorbox = QtWidgets.QMessageBox(self)
-                errorbox.setWindowTitle('Ошибка')
-                errorbox.setText('Не получилось сохранить файл')
-                errorbox.exec()
+            self.save()
         return
 
     def save_as_file(self) -> None:
@@ -173,16 +165,16 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
             rout = self.file_path
 
         (file_name, _) = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить как", rout, "*.sked")
-        if file_name != '':
-            try:
-                JSONProcessor.json_save(file_name, self.school)
-            except BaseException:
-                errorbox = QtWidgets.QMessageBox(self)
-                errorbox.setWindowTitle('Ошибка')
-                errorbox.setText('Не получилось сохранить файл')
-                errorbox.exec()
-
         self.file_path = file_name
+        if self.file_path != '':
+            self.save()
+        return
+
+    def save(self):
+        try:
+            JSONProcessor.json_save(self.file_path, self.school)
+        except BaseException:
+            showMessage(title='Ошибка', message='Не получилось сохранить файл')
         return
 
     def export_class_table(self) -> None:
@@ -205,13 +197,9 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         (file_name, _) = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить как", rout, "*.xlsx")
         if file_name != '':
             try:
-                if not ExcelProcessor.export_table(self.school, param, file_name):
-                    errorbox = QtWidgets.QMessageBox(self)
-                    errorbox.setWindowTitle('Ошибка')
-                    errorbox.setText('Закройте excel файл перед сохранением')
-                    errorbox.exec()
-            except NotADirectoryError:
-                print('error dir')
+                ExcelProcessor.export_table(self.school, param, file_name)
+            except IOError:
+                showMessage(title='Ошибка', message='Не удалось экспортировать excel файл')
 
         self.table_file_path = file_name
         return
@@ -237,25 +225,24 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
             comments = ''
             for comment in conflicts:
                 comments = comments + comment + '\n' + '\n'
-
-            msg = QtWidgets.QMessageBox(self)
-            msg.setWindowTitle('Ошибки')
-            msg.setText(comments)
-            msg.exec()
+            showMessage(title='Ошибки', message=comments)
             return
 
         self.school.drop_current_time()
         builder = ExtendedRecursiveSwapping(self.school)
-        self.school = builder.start()
-        self.tableWidget_timetable.fill_table(self.school)
 
+        start = time.time()
+        self.school = builder.start()
+        end = time.time()
+
+        self.tableWidget_timetable.fill_table(self.school)
         self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
-        if len(self.school.unallocated) > 0:
-            msg = QtWidgets.QMessageBox(self)
-            msg.setWindowTitle('Неудача')
-            msg.setText(f'Не распределено {len(self.school.unallocated)} уроков.\n'
-                        f'Они были помещены в список внизу окна.')
-            msg.exec()
+
+        message = 'Время работы: ' + time.strftime("%H:%M:%S", time.gmtime(end - start)) + '\n' \
+                  + 'Нераспределенно уроков: ' +\
+                  f'{len(self.school.unallocated)}\n'
+
+        showMessage(title='Расписание составлено', message=message)
         return
 
     def set_buttons_available(self) -> None:

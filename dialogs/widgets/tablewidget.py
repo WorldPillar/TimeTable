@@ -241,30 +241,24 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
         super(MyTableWidget, self).startDrag(supportedActions)
         self.set_color(False)
-        if not self.is_drop:
-            self.reset_conflicts()
-            from_item.update()
+
+        self.reset_conflicts()
+        from_item.update()
+        if self.is_drop:
+            self.setSpan(from_index.row(), from_index.column(), 1, 1)
+        else:
             self.setSpan(from_index.row(), from_index.column(), 1, from_item.lesson.duration)
         return
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
-        self.is_drop = True
-
         sender = event.source()
-        is_droped, newItem = self.dropData(event, sender)
+        self.is_drop, newItem = self.dropData(event, sender)
         self.reset_conflicts()
-        if is_droped:
+        if self.is_drop:
             super(MyTableWidget, self).dropEvent(event)
             newItem.set_tooltip_info()
         else:
             event.ignore()
-
-            if sender == self:
-                index = self.selectedIndexes()[0]
-                item = sender.itemFromIndex(index)
-                if item is not None:
-                    item.update()
-                    self.setSpan(index.row(), index.column(), 1, item.lesson.duration)
         return
 
     def dropData(self, event: QtGui.QDropEvent, sender) -> (bool, TimeTableItem):

@@ -2,21 +2,12 @@ from PyQt6 import QtGui
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QHeaderView,\
-    QDialogButtonBox, QPushButton, QComboBox, QMessageBox
+    QDialogButtonBox, QPushButton, QComboBox
 
 from schooldata.data import SchoolData
 from schooldata.school import School, Subject, StudentClass, Teacher, Lesson
 from windows import subjectWindow, classWindow, teacherWindow, lessonWindow, worktimeWindow, schoolWindow
-
-
-def showMessage(message: str = 'Заполните все необходимые поля'):
-    msg = QMessageBox()
-    msg.setWindowTitle('Ошибка')
-    msg.setText(message)
-    msg.setWindowFlag(Qt.WindowType.CustomizeWindowHint, True)
-    msg.setWindowFlag(Qt.WindowType.WindowTitleHint, True)
-    msg.setWindowFlag(Qt.WindowType.WindowSystemMenuHint, False)
-    msg.exec()
+from dialogs.widgets.messageBox import showMessage
 
 
 class SchoolDialog(QDialog, schoolWindow.Ui_dialogSchool):
@@ -90,7 +81,7 @@ class SubjectDialog(QDialog, subjectWindow.Ui_dialogSubject):
                 self.abb_constructor()
             super().accept()
         else:
-            showMessage()
+            showMessage(title='Ошибка', message='Заполните все необходимые поля')
         return
 
 
@@ -140,7 +131,7 @@ class ClassDialog(QDialog, classWindow.Ui_dialogClass):
                 self.abb_constructor()
             super().accept()
         else:
-            showMessage()
+            showMessage(title='Ошибка', message='Заполните все необходимые поля')
         return
 
 
@@ -189,7 +180,7 @@ class TeacherDialog(QDialog, teacherWindow.Ui_dialogTeacher):
                 self.abb_constructor()
             super().accept()
         else:
-            showMessage()
+            showMessage(title='Ошибка', message='Заполните все необходимые поля')
         return
 
 
@@ -283,14 +274,14 @@ class LessonDialog(QDialog, lessonWindow.Ui_dialogLesson):
         """
         if (self.teacher_combobox.currentIndex() == -1) or (self.class_combobox.currentIndex() == -1) or \
                 (self.subject_combobox.currentIndex() == -1) or (self.count_combobox.currentIndex() == -1):
-            showMessage()
+            showMessage(title='Ошибка', message='Заполните все необходимые поля')
             return
         if self.secondTeacherCombobox is not None:
             if self.teacher_combobox.currentIndex() == self.secondTeacherCombobox.currentIndex():
-                showMessage('Учителя не могут быть одинаковыми')
+                showMessage(title='Ошибка', message='Учителя не могут быть одинаковыми')
                 return
             if self.secondTeacherCombobox.currentIndex() == -1:
-                showMessage()
+                showMessage(title='Ошибка', message='Заполните все необходимые поля')
                 return
         super().accept()
         return

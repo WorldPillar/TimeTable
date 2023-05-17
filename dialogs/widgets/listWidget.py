@@ -171,6 +171,7 @@ class MyListWidget(QtWidgets.QListWidget):
         if sender == self:
             return
 
+        self.timetable.is_drop = True
         school = self.mainapp.school
         from_index = self.timetable.selectedIndexes()[0]
         from_item = self.timetable.takeItem(from_index.row(), from_index.column())

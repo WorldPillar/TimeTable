@@ -48,9 +48,8 @@ def _get_id(lesson: Lesson, param: str) -> [int]:
 
 class ExcelProcessor:
     @staticmethod
-    def export_table(school: School, param: str, rout: str) -> bool:
+    def export_table(school: School, param: str, rout: str):
         """
-        Возвращает результат экспорта в виде bool.
         :param school: Объект класса School, в котором хранятся все данные для экспорта.
         :param param: Параметр 'class' для экспорта расписания классов; Параметр 'teacher' для экспорта расписания учителей.
         :param rout: Путь к файлу записи.
@@ -86,11 +85,9 @@ class ExcelProcessor:
                         lesson_cell = ws.cell(j + 2, one_id + 3)
                         lesson_cell.alignment = Alignment(horizontal='center', vertical='center')
 
-                        output = les.student_class.name if param == 'teacher' else les.subject.abbreviation
+                        output = f'{les.subject.abbreviation} {les.student_class.name}' if param == 'teacher'\
+                            else les.subject.abbreviation
                         lesson_cell.value = output
-        try:
-            wb.save(rout)
-            wb.close()
-        except IOError:
-            return False
-        return True
+        wb.save(rout)
+        wb.close()
+        return
