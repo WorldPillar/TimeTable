@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from functools import partial
@@ -142,6 +143,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
                 self.unallocated_list.add_unallocated_lessons(self.school.unallocated)
                 self.tableWidget_timetable.fill_table(self.school)
             except BaseException:
+                logging.error('PARSE_FILE_ERROR')
                 showMessage(title='Ошибка', message='Не получилось открыть файл')
         self.file_path = file_name
         return
@@ -174,6 +176,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
         try:
             JSONProcessor.json_save(self.file_path, self.school)
         except BaseException:
+            logging.error('SAVE_ERROR')
             showMessage(title='Ошибка', message='Не получилось сохранить файл')
         return
 
@@ -199,6 +202,7 @@ class MainApp(QtWidgets.QMainWindow, mainWindow.Ui_MainWindow):
             try:
                 ExcelProcessor.export_table(self.school, param, file_name)
             except IOError:
+                logging.error('EXCEL_IOERROR')
                 showMessage(title='Ошибка', message='Не удалось экспортировать excel файл')
 
         self.table_file_path = file_name

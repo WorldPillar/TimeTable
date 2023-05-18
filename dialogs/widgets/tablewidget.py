@@ -1,3 +1,5 @@
+import logging
+
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtWidgets import QAbstractItemView
@@ -252,15 +254,18 @@ class MyTableWidget(QtWidgets.QTableWidget):
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
         sender = event.source()
-        self.is_drop, newItem = self.dropData(event, sender)
-        self.reset_conflicts()
-        if self.is_drop:
-            super(MyTableWidget, self).dropEvent(event)
-            newItem.set_tooltip_info()
-        else:
-            event.ignore()
+        try:
+            self.is_drop, newItem = self.dropData(event, sender)
+            self.reset_conflicts()
+            if self.is_drop:
+                super(MyTableWidget, self).dropEvent(event)
+                newItem.set_tooltip_info()
+            else:
+                event.ignore()
+            return
+        except BaseException:
+            logging.error('TABLE_DROPEVENT_ERROR')
         return
-
     def dropData(self, event: QtGui.QDropEvent, sender) -> (bool, TimeTableItem):
         school = self.mainapp.school
         from_index = sender.selectedIndexes()[0]

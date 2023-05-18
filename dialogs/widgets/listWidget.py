@@ -1,3 +1,5 @@
+import logging
+
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QAbstractItemView, QListWidgetItem
@@ -171,14 +173,18 @@ class MyListWidget(QtWidgets.QListWidget):
         if sender == self:
             return
 
-        self.timetable.is_drop = True
-        school = self.mainapp.school
-        from_index = self.timetable.selectedIndexes()[0]
-        from_item = self.timetable.takeItem(from_index.row(), from_index.column())
-        from_day, from_les_pos = utils.column_to_days_lessons(from_index.column(), school.amount_lessons)
+        try:
+            self.timetable.is_drop = True
+            school = self.mainapp.school
+            from_index = self.timetable.selectedIndexes()[0]
+            from_item = self.timetable.takeItem(from_index.row(), from_index.column())
+            from_day, from_les_pos = utils.column_to_days_lessons(from_index.column(), school.amount_lessons)
 
-        self._throw_lesson(school, from_item.lesson, from_day, from_les_pos)
-        self.add_unallocated_lesson(from_item.lesson)
+            self._throw_lesson(school, from_item.lesson, from_day, from_les_pos)
+            self.add_unallocated_lesson(from_item.lesson)
+            return
+        except BaseException:
+            logging.error('DROPEVENT_ERROR')
         return
 
     @staticmethod
