@@ -1,4 +1,4 @@
-from schooldata.school import School, Teacher, StudentClass
+from schooldata.school import School, Teacher, StudentClass, Subject
 
 
 class Validator:
@@ -14,7 +14,7 @@ class Validator:
         return count
 
     @staticmethod
-    def _create_comment(obj, worktime: int) -> str:
+    def _create_comment(obj: StudentClass or Teacher, worktime: int) -> str:
         """
         Метод создания комментария
         :param obj: объект класса StudentClass или Teacher.
@@ -56,5 +56,12 @@ class Validator:
             worktime = Validator._worktime_counter(student_class.worktime)
             if student_class.lessons_count > worktime:
                 comment = Validator._create_comment(student_class, worktime)
+                conflicts.append(comment)
+        for lesson in school.lessons:
+            worktime = Validator._worktime_counter(lesson.subject.worktime)
+            if lesson.amount * lesson.duration > worktime:
+                comment = f'У урока с предметом {lesson.subject.get_name()} количество больше, ' \
+                          f'чем свободных дней в рабочей неделе предмета:' \
+                          f' {lesson.amount * lesson.duration} > {worktime}'
                 conflicts.append(comment)
         return conflicts
