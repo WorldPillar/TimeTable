@@ -46,7 +46,7 @@ class Validator:
             if workload is not None:
                 if teacher.lessons_count > workload:
                     string = f'У учителя {teacher.get_name()} больше уроков, ' \
-                             f'чем его рабочая ставка: {teacher.lessons_count} > {workload}'
+                             f'чем его нагрузка: {teacher.lessons_count} > {workload}'
                     conflicts.append(string)
             worktime = Validator._worktime_counter(teacher.worktime)
             if teacher.lessons_count > worktime:
